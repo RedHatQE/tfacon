@@ -1,0 +1,160 @@
+// Package cmd is the package for all command line related things
+package cmd
+
+import (
+	"bytes"
+	"fmt"
+	"io/fs"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"strings"
+
+	"github.com/RedHatQE/tfacon/common"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+var cmdInfoList []map[string]string = []map[string]string{
+	{
+		"cmdName":        "tfa-url",
+		"valName":        "TFA_URL",
+		"defaultVal":     "default val for tfa url",
+		"cmdDescription": "The url to the TFA Classifier",
+	},
+	{
+		"cmdName":        "platform-url",
+		"valName":        "PLATFORM_URL",
+		"defaultVal":     "default val for platform url",
+		"cmdDescription": "The url to the test platform(example: https://reportportal-ccit.apps.ocp4.prod.psi.redhat.com)",
+	},
+	{
+		"cmdName":        "connector-type",
+		"valName":        "CONNECTOR_TYPE",
+		"defaultVal":     "RPCon",
+		"cmdDescription": "The type of connector you want to use(example: RPCon, PolarionCon, JiraCon)",
+	},
+	{
+		"cmdName":        "launch-id",
+		"valName":        "LAUNCH_ID",
+		"defaultVal":     "",
+		"cmdDescription": "The launch id of report portal",
+	},
+	{
+		"cmdName":        "project-name",
+		"valName":        "PROJECT_NAME",
+		"defaultVal":     "",
+		"cmdDescription": "The project name of report portal",
+	},
+	{
+		"cmdName":        "auth-token",
+		"valName":        "AUTH_TOKEN",
+		"defaultVal":     "",
+		"cmdDescription": "The AUTH_TOKEN of report portal",
+	},
+	{
+		"cmdName":        "launch-name",
+		"valName":        "LAUNCH_NAME",
+		"defaultVal":     "",
+		"cmdDescription": "The launch name of the launch in report portal",
+	},
+}
+
+func initConfig(viper *viper.Viper, cmd *cobra.Command, cmdInfoList []map[string]string) {
+	if os.Getenv("TFACON_YAML_PATH") != "" {
+		index := strings.LastIndex(os.Getenv("TFACON_YAML_PATH"), "/")
+		path := os.Getenv("TFACON_YAML_PATH")[:index]
+		viper.AddConfigPath(path)
+
+		configName := strings.Split(os.Getenv("TFACON_YAML_PATH")[index+1:], ".")
+		viper.SetConfigName(configName[0])
+	} else {
+		viper.AddConfigPath(".")
+		viper.SetConfigName("tfacon")
+	}
+
+	// viper.AddConfigPath(".")
+	// viper.SetConfigName("tfacon")
+	viper.AutomaticEnv()
+
+	for _, v := range cmdInfoList {
+		initViperVal(cmd, viper, v["cmdName"], v["valName"], v["defaultVal"], v["cmdDescription"])
+	}
+
+	err := viper.ReadInConfig()
+
+	common.HandleError(err)
+}
+
+func initViperVal(cmd *cobra.Command, viper *viper.Viper, cmdName, valName, defaultVal, cmdDescription string) {
+	if viper.GetString(valName) == "" {
+		viper.SetDefault(valName, defaultVal)
+	} else {
+		viper.SetDefault(valName, viper.GetString(valName))
+	}
+
+	cmd.PersistentFlags().StringP(cmdName, "", viper.GetString(valName), cmdDescription)
+	err := viper.BindPFlag(valName, cmd.PersistentFlags().Lookup(cmdName))
+	common.HandleError(err)
+}
+
+func initTFAConfigFile(viper *viper.Viper) {
+	var file []byte
+
+	var err error
+
+	if os.Getenv("TFACON_CONFIG_PATH") != "" {
+		file, err = ioutil.ReadFile(os.Getenv("TFACON_CONFIG_PATH"))
+	} else {
+		file, err = ioutil.ReadFile("./tfacon.cfg")
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			_, err = os.Create("tfacon.cfg")
+			common.HandleError(err)
+		}
+	}()
+	common.HandleError(err)
+	viper.SetConfigType("ini")
+	viper.SetDefault("config.concurrency", true)
+	viper.SetDefault("config.retry_times", 1)
+	viper.SetDefault("config.add_attributes", false)
+	err = viper.ReadConfig(bytes.NewBuffer(file))
+	common.HandleError(err)
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "You can add this tag to print more detailed info")
+	err = viper.BindPFlag("config.verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+	common.HandleError(err)
+}
+
+func initWorkspace() {
+	pwd, err := os.Getwd()
+	common.HandleError(err)
+	fmt.Println(pwd)
+
+	err = os.Mkdir("tfacon_workspace", fs.ModePerm)
+
+	common.HandleError(err)
+	err = os.Mkdir("/tmp/.tfacon", fs.ModePerm)
+	common.HandleError(err)
+	err = os.Chdir("/tmp/.tfacon/")
+	common.HandleError(err)
+
+	cmd := exec.Command("git", "clone", "https://github.com/RedHatQE/tfacon.git")
+
+	err = cmd.Run()
+	common.HandleError(err)
+	err = os.Chdir("/tmp/.tfacon/tfacon")
+
+	common.HandleError(err)
+
+	cmd = exec.Command("mv", "examples", pwd+"/tfacon_workspace")
+
+	err = cmd.Run()
+	common.HandleError(err)
+
+	cmd = exec.Command("rm", "/tmp/.tfacon", "-rf")
+
+	err = cmd.Run()
+	common.HandleError(err)
+}

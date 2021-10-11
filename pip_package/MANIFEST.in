@@ -1,0 +1,2 @@
+include tfacon_pip/tfacon_binary/*
+include scripts/*

@@ -1,0 +1,6 @@
+launch_id: "your launch_id goes here"
+project_name: "your project name goes here"
+auth_token: "xxxxx-xxxx-xxxxx-xxxx-xxxxx"
+platform_url: "https://reportportal.com"
+tfa_url: "your tfa classifier url"
+# connector_type: "RPCon"

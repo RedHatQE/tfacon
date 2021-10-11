@@ -1,0 +1,23 @@
+run:
+  tests: false
+linters:
+  enable-all: true
+  disable:
+    - forbidigo
+    - stylecheck
+    - gochecknoinits
+    - gosec
+    - revive
+    - gochecknoglobals
+    - exhaustivestruct
+    - golint
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - linters:
+      - gosec
+      - forbidigo
+      - golint
+      - gochecknoinits
+      - stylecheck
+      text: "G107,ST1003"

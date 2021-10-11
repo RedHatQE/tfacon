@@ -1,0 +1,41 @@
+name: "Push the master branch to pypi when develop is merged to master and version is changed"
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'pip_package/tfacon_pip/__init__.py'
+      - 'pip_package/setup.py'
+
+jobs:
+  deploy_pypi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --upgrade build
+          python3 -m pip install --upgrade twine
+          python3 -m pip install --upgrade setuptools
+          python3 -m pip install --upgrade wheel
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      - name: Build tfacon binary
+        run: |
+          make build-pip
+      - name: Build and publish
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_DNO_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_DNO_PASSWORD }}
+        run: |
+          cd pip_package/
+          python3 setup.py sdist bdist_wheel
+          python3 -m twine upload dist/*.gz --verbose
