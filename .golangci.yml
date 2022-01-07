@@ -11,6 +11,10 @@ linters:
     - gochecknoglobals
     - exhaustivestruct
     - golint
+    - ineffassign
+    - staticcheck
+    - wsl
+    - gofumpt  
 issues:
   exclude-use-default: false
   exclude-rules:
@@ -20,4 +24,6 @@ issues:
       - golint
       - gochecknoinits
       - stylecheck
+      - staticcheck
+      - wsl
       text: "G107,ST1003"
