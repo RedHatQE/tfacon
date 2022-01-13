@@ -1,12 +1,12 @@
 import os
 import re
 
-from setuptools import  setup
+from setuptools import setup
 
 
 setup(
     name='tfacon',
-    version="1.0.8",
+    version="1.0.9",
     description="tfacon",
     author="Red Hat Inc",
 )

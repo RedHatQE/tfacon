@@ -412,19 +412,43 @@ func (c *RPConnector) GetTestLog(test_id string) []string {
 
 type attribute map[string]string
 
-func (c *RPConnector) updateAttributesForPrediction(id, prediction string) error {
-	updated_attribute := map[string][]attribute{
-		"attributes": {
-			attribute{
-				"key":   "AI Prediction",
-				"value": prediction,
-			},
-		},
+func (c *RPConnector) getExistingAtrributeByID(id string) Attributes {
+	url := fmt.Sprintf("%s/api/v1/%s/item/uuid/%s", c.RPURL, c.ProjectName, id)
+	method := http.MethodGet
+	auth_token := c.AuthToken
+
+	body := bytes.NewBuffer(nil)
+	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
+	common.HandleError(err)
+
+	if err != nil {
+		err = fmt.Errorf("Get attibute failed:%w", err)
+		common.HandleError(err)
 	}
+
+	attrs := gjson.Get(string(data), "attributes").String()
+	attr := []attribute{}
+
+	err = json.Unmarshal([]byte(attrs), &attr)
+	common.HandleError(err)
+
+	return Attributes{"attributes": attr}
+}
+
+func (c *RPConnector) updateAttributesForPrediction(id, prediction string) error {
+	existingAttribute := c.getExistingAtrributeByID(id)
+	tfa_prediction_attr := attribute{
+
+		"key":   "AI Prediction",
+		"value": prediction,
+	}
+
+	existingAttribute["attributes"] = append(existingAttribute["attributes"], tfa_prediction_attr)
+
 	url := fmt.Sprintf("%s/api/v1/%s/item/%s/update", c.RPURL, c.ProjectName, id)
 	method := http.MethodPut
 	auth_token := c.AuthToken
-	d, err := json.Marshal(updated_attribute)
+	d, err := json.Marshal(existingAttribute)
 	common.HandleError(err)
 
 	body := bytes.NewBuffer(d)
@@ -433,7 +457,7 @@ func (c *RPConnector) updateAttributesForPrediction(id, prediction string) error
 	if err != nil {
 		err = fmt.Errorf("updated attibute failed:%w", err)
 	}
-	// fmt.Printf("This is the return from updating attributes: %s\n", string(data))
+
 	log.Printf("Updated the test item(id): %s with it's prediction %s\n", id, prediction)
 
 	return err
@@ -507,7 +531,6 @@ func (c *RPConnector) GetLaunchID() string {
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-
 	if err != nil {
 		fmt.Printf("Get Launch Id failed: %v", string(data))
 	}
@@ -515,6 +538,28 @@ func (c *RPConnector) GetLaunchID() string {
 	launchid := gjson.Get(string(data), "content.0.id").String()
 
 	return launchid
+}
+
+type Attributes map[string][]attribute
+
+func (c *RPConnector) GetAttributesByID(id string) Attributes {
+	url := fmt.Sprintf("%s/api/v1/%s/item/uuid/%s",
+		c.RPURL, c.ProjectName, id)
+	method := http.MethodGet
+	auth_token := c.AuthToken
+	body := bytes.NewBuffer(nil)
+	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
+	if err != nil {
+		fmt.Printf("Get Launch Id failed: %v", string(data))
+	}
+
+	attributes := gjson.Get(string(data), "attributes").String()
+
+	attr := Attributes{}
+	err = json.Unmarshal([]byte(attributes), &attr)
+	common.HandleError(err)
+
+	return attr
 }
 
 // Revert function will set all test items back to the

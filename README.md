@@ -186,7 +186,7 @@ __*master*__ is the stable branch
 
 ### More Details
 #### Release Information
-[v1.0.0](github.com/RedHatQE/tfacon@master)
+[v1.0.0](https://github.com/RedHatQE/tfacon/releases/tag/v1.0.0)
 #### [Vedio Tutourial](https://www.youtube.com/playlist?list=PLbY6iJAZIsCD6ed_k18wW8dtw4m8x7hlj)
 #### How To Embed tfacon to CI Pipelines
 [CI Details](docs/more_docs/CI.md)
