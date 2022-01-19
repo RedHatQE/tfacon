@@ -41,7 +41,7 @@ The default name for this cfg file is tfacon.cfg, you can change this by edit th
 #### list
 ```bash
 ❯ tfacon list -h
-list all information constructed from tfacon.yml/enviroment variables/cli
+list all information constructed from tfacon.yml/environment variables/cli
 
 Usage:
   tfacon list [flags]
@@ -76,7 +76,7 @@ TFAURL:          https://tfa.com
 #### run
 ```bash
 ❯ tfacon run -h                                       
-run the info retrival and get the pridiction from TFA
+run the info retrieval and get the prediction from TFA
 
 Usage:
   tfacon run [flags]
@@ -110,7 +110,7 @@ This is the return info from update: [{"issueType":"ab001","comment":"","autoAna
 __You must use auth_token from a superadmin account to run tfacon, otherwise the validation will fail!__
 ```bash
 ❯ tfacon validate -h
-validate if the parameter is valid and if the urls are accesible
+validate if the parameter is valid and if the urls are accessible
 
 Usage:
   tfacon validate [flags]
@@ -175,7 +175,7 @@ __You can enable this to add an extra attribute "AI Prediction" to all the test 
 
 
 ## Developer Guide
-### Archietrcue
+### Architecture
 #### UML graph
 ![uml](docs/image/tfacon_uml.svg)
 
@@ -187,6 +187,6 @@ __*master*__ is the stable branch
 ### More Details
 #### Release Information
 [v1.0.0](https://github.com/RedHatQE/tfacon/releases/tag/v1.0.0)
-#### [Vedio Tutourial](https://www.youtube.com/playlist?list=PLbY6iJAZIsCD6ed_k18wW8dtw4m8x7hlj)
+#### [Video Tutorial](https://www.youtube.com/playlist?list=PLbY6iJAZIsCD6ed_k18wW8dtw4m8x7hlj)
 #### How To Embed tfacon to CI Pipelines
 [CI Details](docs/more_docs/CI.md)

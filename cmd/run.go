@@ -27,8 +27,8 @@ import (
 // runCmd represents the run command.
 var runCmd = &cobra.Command{
 	Use:   "run",
-	Short: "run the info retrival and get the pridiction from TFA",
-	Long:  `run the info retrival and get the pridiction from TFA`,
+	Short: "run the info retrival and get the prediction from TFA",
+	Long:  `run the info retrival and get the prediction from TFA`,
 	Run: func(cmd *cobra.Command, args []string) {
 		common.PrintHeader(rootCmd.Version)
 		core.Run(viperRun, viperConfig)
