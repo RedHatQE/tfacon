@@ -29,8 +29,8 @@ import (
 // validateCmd represents the validate command.
 var validateCmd = &cobra.Command{
 	Use:   "validate",
-	Short: "validate if the parameter is valid and if the urls are accesible",
-	Long:  `validate if the parameter is valid and if the urls are accesible`,
+	Short: "validate if the parameter is valid and if the urls are accessible",
+	Long:  `validate if the parameter is valid and if the urls are accessible`,
 	Run: func(cmd *cobra.Command, args []string) {
 		con := core.GetInfo(viperValidate)
 		fmt.Println(con.String())
