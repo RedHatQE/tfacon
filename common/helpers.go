@@ -37,7 +37,10 @@ func PrintHeader(version string) {
 func SendHTTPRequest(ctx context.Context, method, url,
 	auth_token string, body io.Reader, client *http.Client) ([]byte, bool, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
-	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", auth_token))
+
+	if auth_token != "" {
+		req.Header.Add("Authorization", fmt.Sprintf("bearer %s", auth_token))
+	}
 
 	if err != nil {
 		err = fmt.Errorf("tfacon http handler crashed, request built failed, could be a bad request: %w", err)

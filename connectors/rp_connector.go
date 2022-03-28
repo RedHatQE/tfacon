@@ -20,6 +20,16 @@ import (
 
 // Issues is a list of IssueItem.
 type Issues []IssueItem
+type REResult struct {
+	LaunchID     string `json:"launch_id"`
+	LaunchName   string `json:"launch_name"`
+	TestItemId   string `json:"test_item_id"`
+	TestItemName string `json:"test_name"`
+	IssueType    string `json:"issue_name"`
+	TicketNumber string `json:"ticket_number"`
+	TicketURL    string `json:"ticket_url"`
+	Team         string `json:"TEAM"`
+}
 
 // IssueItem is a smallest unit
 // in the reuquest body for describing
@@ -61,6 +71,7 @@ type RPConnector struct {
 	RPURL       string `mapstructure:"PLATFORM_URL"`
 	Client      *http.Client
 	TFAURL      string `mapstructure:"TFA_URL"`
+	REURL       string `mapstructure:"RE_URL"`
 }
 
 // Validate method validates against the input from
@@ -205,20 +216,20 @@ func (c *RPConnector) UpdateAll(updatedListOfIssues common.GeneralUpdatedList, v
 
 // BuildUpdatedList method is a interface method for tfacon interface
 // it builds a list of issues, it returns GeneralUpdatedList.
-func (c *RPConnector) BuildUpdatedList(ids []string, concurrent bool, add_attributes bool) common.GeneralUpdatedList {
-	return UpdatedList{IssuesList: c.BuildIssues(ids, concurrent, add_attributes)}
+func (c *RPConnector) BuildUpdatedList(ids []string, concurrent bool, add_attributes bool, re bool) common.GeneralUpdatedList {
+	return UpdatedList{IssuesList: c.BuildIssues(ids, concurrent, add_attributes, re)}
 }
 
 // BuildIssues method build the issue struct.
-func (c *RPConnector) BuildIssues(ids []string, concurrent bool, add_attributes bool) Issues {
+func (c *RPConnector) BuildIssues(ids []string, concurrent bool, add_attributes bool, re bool) Issues {
 	issues := Issues{}
 
 	if concurrent {
-		return c.BuildIssuesConcurrent(ids, add_attributes)
+		return c.BuildIssuesConcurrent(ids, add_attributes, re)
 	}
 
 	for _, id := range ids {
-		issues = append(issues, c.BuildIssueItemHelper(id, add_attributes))
+		issues = append(issues, c.BuildIssueItemHelper(id, add_attributes, re))
 		log.Printf("Getting prediction of test item(id): %s\n", id)
 	}
 
@@ -226,7 +237,7 @@ func (c *RPConnector) BuildIssues(ids []string, concurrent bool, add_attributes 
 }
 
 // BuildIssuesConcurrent methods builds the issues struct concurrently.
-func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool) Issues {
+func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool, re bool) Issues {
 	issues := Issues{}
 	issuesChan := make(chan IssueItem, len(ids))
 	idsChan := make(chan string, len(ids))
@@ -241,7 +252,7 @@ func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool) I
 	}()
 
 	for i := 0; i < len(ids); i++ {
-		go c.BuildIssueItemConcurrent(issuesChan, idsChan, exitChan, add_attributes)
+		go c.BuildIssueItemConcurrent(issuesChan, idsChan, exitChan, add_attributes, re)
 	}
 
 	for i := 0; i < len(ids); i++ {
@@ -258,7 +269,7 @@ func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool) I
 
 // BuildIssueItemHelper method is a helper method for building
 // the issue item struct.
-func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool) IssueItem {
+func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bool) IssueItem {
 	logs := c.GetTestLog(id)
 	// Make logs to string(in []byte format)
 	log_after_marshal, _ := json.Marshal(logs)
@@ -278,6 +289,14 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool) Issue
 	var issue_info IssueInfo = c.GetIssueInfoForSingleTestID(id)
 	issue_info.IssueType = prediction_code
 
+	// Update the comment with re result
+	if re == true {
+		test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
+		test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
+		// result, _ := json.Marshal(c.GetREResult(test_item_name))
+		issue_info.Comment = issue_info.Comment + c.GetREResult(test_item_name)
+	}
+
 	var issue_item IssueItem = IssueItem{Issue: issue_info, TestItemID: id}
 
 	if add_attributes {
@@ -289,16 +308,47 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool) Issue
 	return issue_item
 }
 
+//RERequestBody is the struct of request body for Recommandation Engine
+type RERequestBody struct {
+	TestItemName string `json:"test_item_name"`
+}
+
+type REResults []REResult
+
+//GetREResult can extract the returned re result
+func (c *RPConnector) GetREResult(test_item_name string) string {
+	url := c.REURL
+	method := http.MethodPost
+	var b RERequestBody = RERequestBody{TestItemName: test_item_name}
+
+	var bb map[string]RERequestBody
+	bb = map[string]RERequestBody{"data": b}
+	body, _ := json.Marshal(bb)
+	data, _, err := common.SendHTTPRequest(context.Background(), method, url, "", bytes.NewBuffer(body), c.Client)
+	common.HandleError(err)
+	var results REResults = []REResult{}
+	returned_ress := gjson.Get(string(data), "result").Str
+	json.Unmarshal([]byte(returned_ress), &results)
+	// fmt.Println(returned_ress)
+	// for _, res := range returned_ress {
+	// 	var result REResult
+	// 	json.Unmarshal([]byte(res.Str), result)
+	// 	results = append(results, result)
+	// }
+
+	return returned_ress
+}
+
 // BuildIssueItemConcurrent method builds Issue Item Concurrently.
 func (c *RPConnector) BuildIssueItemConcurrent(issuesChan chan<- IssueItem, idsChan <-chan string, exitChan chan<- bool,
-	add_attributes bool) {
+	add_attributes bool, re bool) {
 	for {
 		id, ok := <-idsChan
 		if !ok {
 			break
 		}
 
-		issuesChan <- c.BuildIssueItemHelper(id, add_attributes)
+		issuesChan <- c.BuildIssueItemHelper(id, add_attributes, re)
 
 		log.Printf("Getting prediction of test item(id): %s\n", id)
 	}
@@ -306,7 +356,7 @@ func (c *RPConnector) BuildIssueItemConcurrent(issuesChan chan<- IssueItem, idsC
 }
 
 // GetIssueInfoForSingleTestId method returns the issueinfo with the issue(test item) id.
-func (c *RPConnector) GetIssueInfoForSingleTestID(id string) IssueInfo {
+func (c *RPConnector) GetDetailedIssueInfoForSingleTestID(id string) ([]byte, error) {
 	if c.LaunchID == "" {
 		c.LaunchID = c.GetLaunchID()
 	}
@@ -317,6 +367,12 @@ func (c *RPConnector) GetIssueInfoForSingleTestID(id string) IssueInfo {
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
+	return data, err
+}
+
+// GetIssueInfoForSingleTestId method returns the issueinfo with the issue(test item) id.
+func (c *RPConnector) GetIssueInfoForSingleTestID(id string) IssueInfo {
+	data, err := c.GetDetailedIssueInfoForSingleTestID(id)
 	common.HandleError(err)
 
 	issue_info_str := gjson.Get(string(data), "content.0.issue").String()
