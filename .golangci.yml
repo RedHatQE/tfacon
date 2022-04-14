@@ -15,6 +15,7 @@ linters:
     - staticcheck
     - wsl
     - gofumpt  
+    - tagliatelle
 issues:
   exclude-use-default: false
   exclude-rules:
@@ -26,4 +27,5 @@ issues:
       - stylecheck
       - staticcheck
       - wsl
+      - tagliatelle
       text: "G107,ST1003"

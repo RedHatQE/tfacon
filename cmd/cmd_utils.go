@@ -23,6 +23,12 @@ var cmdInfoList []map[string]string = []map[string]string{
 		"cmdDescription": "The url to the TFA Classifier",
 	},
 	{
+		"cmdName":        "re-url",
+		"valName":        "RE_URL",
+		"defaultVal":     "default val for re url",
+		"cmdDescription": "The url to the Recommendation Engine",
+	},
+	{
 		"cmdName":        "platform-url",
 		"valName":        "PLATFORM_URL",
 		"defaultVal":     "default val for platform url",
@@ -124,6 +130,10 @@ func initTFAConfigFile(viper *viper.Viper) {
 	common.HandleError(err)
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "You can add this tag to print more detailed info")
 	err = viper.BindPFlag("config.verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+
+	rootCmd.PersistentFlags().BoolP("re", "r", false,
+		"You can add this tag to let tfacon add Recommendation Engine result to comment section")
+	err = viper.BindPFlag("config.re", rootCmd.PersistentFlags().Lookup("re"))
 	common.HandleError(err)
 }
 
