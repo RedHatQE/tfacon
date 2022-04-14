@@ -216,7 +216,8 @@ func (c *RPConnector) UpdateAll(updatedListOfIssues common.GeneralUpdatedList, v
 
 // BuildUpdatedList method is a interface method for tfacon interface
 // it builds a list of issues, it returns GeneralUpdatedList.
-func (c *RPConnector) BuildUpdatedList(ids []string, concurrent bool, add_attributes bool, re bool) common.GeneralUpdatedList {
+func (c *RPConnector) BuildUpdatedList(ids []string,
+	concurrent bool, add_attributes bool, re bool) common.GeneralUpdatedList {
 	return UpdatedList{IssuesList: c.BuildIssues(ids, concurrent, add_attributes, re)}
 }
 
@@ -290,11 +291,11 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 	issue_info.IssueType = prediction_code
 
 	// Update the comment with re result
-	if re == true {
+	if re {
 		test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
 		test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
 		// result, _ := json.Marshal(c.GetREResult(test_item_name))
-		issue_info.Comment = issue_info.Comment + c.GetREResult(test_item_name)
+		issue_info.Comment += c.GetREResult(test_item_name)
 	}
 
 	var issue_item IssueItem = IssueItem{Issue: issue_info, TestItemID: id}
@@ -308,27 +309,28 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 	return issue_item
 }
 
-//RERequestBody is the struct of request body for Recommandation Engine
+// RERequestBody is the struct of request body for Recommendation Engine.
 type RERequestBody struct {
 	TestItemName string `json:"test_item_name"`
 }
 
 type REResults []REResult
 
-//GetREResult can extract the returned re result
+// GetREResult can extract the returned re result.
 func (c *RPConnector) GetREResult(test_item_name string) string {
 	url := c.REURL
 	method := http.MethodPost
 	var b RERequestBody = RERequestBody{TestItemName: test_item_name}
 
-	var bb map[string]RERequestBody
-	bb = map[string]RERequestBody{"data": b}
+	var bb map[string]RERequestBody = map[string]RERequestBody{"data": b}
+
 	body, _ := json.Marshal(bb)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, "", bytes.NewBuffer(body), c.Client)
 	common.HandleError(err)
 	var results REResults = []REResult{}
 	returned_ress := gjson.Get(string(data), "result").Str
-	json.Unmarshal([]byte(returned_ress), &results)
+	err = json.Unmarshal([]byte(returned_ress), &results)
+	common.HandleError(err)
 	// fmt.Println(returned_ress)
 	// for _, res := range returned_ress {
 	// 	var result REResult
@@ -367,6 +369,8 @@ func (c *RPConnector) GetDetailedIssueInfoForSingleTestID(id string) ([]byte, er
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
+	err = errors.Errorf("GetDetailedIssueInfoForSingleTestID error: %s", err)
+
 	return data, err
 }
 
