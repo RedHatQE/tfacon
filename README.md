@@ -5,7 +5,8 @@ __tfacon__ is a CLI tool for connecting Test Management Platforms and __Test Fai
 an AI/ML predictioner developed by *Red Hat D&O Data Science Team* which can predict the test's catalog. It supports __AutomationBug, ProductBug, SystemBug__ on Report Portal now. tfacon only support report portal at this moment. We will support more platforms in the future.
 
 ## User Guide
-### Installation
+### Installation and Upgrade
+You can install a new version of tfacon using below commands
 ##### Via go get
 ```bash
 go get -u github.com/RedHatQE/tfacon@master
@@ -75,8 +76,8 @@ TFAURL:          https://tfa.com
 ```
 #### run
 ```bash
-❯ tfacon run -h                                       
-run the info retrieval and get the prediction from TFA
+❯ tfacon run -h 
+run the info retrival and get the prediction from TFA
 
 Usage:
   tfacon run [flags]
@@ -86,9 +87,15 @@ Flags:
       --connector-type string   The type of connector you want to use(example: RPCon, PolarionCon, JiraCon) (default "RPCon")
   -h, --help                    help for run
       --launch-id string        The launch id of report portal
+      --launch-name string      The launch name of the launch in report portal
       --platform-url string     The url to the test platform(example: https://reportportal-ccit.apps.ocp4.prod.psi.redhat.com) (default "default val for platform url")
       --project-name string     The project name of report portal
+      --re-url string           The url to the Recommendation Engine (default "default val for re url")
       --tfa-url string          The url to the TFA Classifier (default "default val for tfa url")
+
+Global Flags:
+  -r, --re        You can add this tag to let tfacon add Recommendation Engine result to comment section
+  -v, --verbose   You can add this tag to print more detailed info
 ```
 
 Example Output
