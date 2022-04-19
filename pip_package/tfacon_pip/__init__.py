@@ -22,5 +22,5 @@
     :license: GPLv3, see LICENSE for more details.
 """
 
-__version__ = '1.0.9'
+__version__ = '1.0.10'
 __author__ = 'Red Hat Inc.'
