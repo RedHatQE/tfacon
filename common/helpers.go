@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 
 	"github.com/fatih/color"
 )
@@ -113,5 +114,11 @@ func httpHelper(method string, resp *http.Response) (bool, error) {
 func HandleError(err error) {
 	if err != nil {
 		fmt.Println(err)
+		// print out the caller information
+		pc, _, _, ok := runtime.Caller(1)
+		details := runtime.FuncForPC(pc)
+		if ok && details != nil {
+			fmt.Printf("called from %s\n", details.Name())
+		}
 	}
 }

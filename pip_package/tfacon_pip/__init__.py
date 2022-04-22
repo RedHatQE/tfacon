@@ -16,11 +16,10 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-    teflo_terraform_plugin
 
     :copyright: (c) 2021 Red Hat, Inc.
     :license: GPLv3, see LICENSE for more details.
 """
 
-__version__ = '1.0.10'
+__version__ = '1.0.11'
 __author__ = 'Red Hat Inc.'
