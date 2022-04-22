@@ -7,6 +7,7 @@ on:
     paths:
       - 'pip_package/tfacon_pip/__init__.py'
       - 'pip_package/setup.py'
+      - '.github/workflows/publish_pypi.yml'
 
 jobs:
   deploy_pypi:
