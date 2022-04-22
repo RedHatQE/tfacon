@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name='tfacon',
-    version="1.0.10",
+    version="1.0.11",
     description="tfacon",
     author="Red Hat Inc",
 )

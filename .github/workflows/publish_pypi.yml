@@ -36,6 +36,8 @@ jobs:
           TWINE_USERNAME: ${{ secrets.PYPI_DNO_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_DNO_PASSWORD }}
         run: |
+          make build-pip
+          ll tfacon_pip/tfacon_binary/
           cd pip_package/
           python3 setup.py sdist bdist_wheel
           python3 -m twine upload dist/*.gz --verbose
