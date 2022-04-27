@@ -2,10 +2,12 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
 
 	"github.com/fatih/color"
@@ -15,6 +17,16 @@ import (
 // prints str in green to terminal.
 func PrintGreen(str string) {
 	color.Green(str)
+}
+
+// FileExist is a helper function that
+// tell if a file exites.
+func FileExist(str string) bool {
+	if _, err := os.Stat(str); errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+
+	return true
 }
 
 // PrintRed is a helper function that
@@ -80,15 +92,6 @@ func SendHTTPRequest(ctx context.Context, method, url,
 		return nil, false, err
 	}
 
-	// if resp.StatusCode == http.StatusOK {
-	// 	return d, true, err
-	// }
-
-	// if method == "POST" && resp.StatusCode == http.StatusCreated {
-	// 	return d, true, err
-	// }
-
-	// err = fmt.Errorf("http handler request exception, status code is:%d, err is %w\n", resp.StatusCode, err)
 	success, err := httpHelper(method, resp)
 
 	return d, success, err

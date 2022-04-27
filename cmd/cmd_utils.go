@@ -67,20 +67,27 @@ var cmdInfoList []map[string]string = []map[string]string{
 }
 
 func initConfig(viper *viper.Viper, cmd *cobra.Command, cmdInfoList []map[string]string) {
-	if os.Getenv("TFACON_YAML_PATH") != "" {
+	switch {
+	case os.Getenv("TFACON_YAML_PATH") != "":
 		index := strings.LastIndex(os.Getenv("TFACON_YAML_PATH"), "/")
 		path := os.Getenv("TFACON_YAML_PATH")[:index]
 		viper.AddConfigPath(path)
 
 		configName := strings.Split(os.Getenv("TFACON_YAML_PATH")[index+1:], ".")
 		viper.SetConfigName(configName[0])
-	} else {
+
+	case common.FileExist("./tfacon.yml") || common.FileExist("./tfacon.yaml"):
+		viper.AddConfigPath(".")
+		viper.SetConfigName("tfacon")
+
+	default:
+
+		_, err := os.Create("tfacon.yml")
+		common.HandleError(err)
 		viper.AddConfigPath(".")
 		viper.SetConfigName("tfacon")
 	}
 
-	// viper.AddConfigPath(".")
-	// viper.SetConfigName("tfacon")
 	viper.AutomaticEnv()
 
 	for _, v := range cmdInfoList {
@@ -111,7 +118,7 @@ func initTFAConfigFile(viper *viper.Viper) {
 
 	if os.Getenv("TFACON_CONFIG_PATH") != "" {
 		file, err = ioutil.ReadFile(os.Getenv("TFACON_CONFIG_PATH"))
-	} else {
+	} else if common.FileExist("./tfacon.cfg") {
 		file, err = ioutil.ReadFile("./tfacon.cfg")
 	}
 
