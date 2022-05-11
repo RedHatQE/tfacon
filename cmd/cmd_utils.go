@@ -19,26 +19,26 @@ var cmdInfoList []map[string]string = []map[string]string{
 	{
 		"cmdName":        "tfa-url",
 		"valName":        "TFA_URL",
-		"defaultVal":     "default val for tfa url",
+		"defaultVal":     "default value for tfa url",
 		"cmdDescription": "The url to the TFA Classifier",
 	},
 	{
 		"cmdName":        "re-url",
 		"valName":        "RE_URL",
-		"defaultVal":     "default val for re url",
+		"defaultVal":     "default value for Recommendation Engine url",
 		"cmdDescription": "The url to the Recommendation Engine",
 	},
 	{
 		"cmdName":        "platform-url",
 		"valName":        "PLATFORM_URL",
-		"defaultVal":     "default val for platform url",
-		"cmdDescription": "The url to the test platform(example: https://reportportal-ccit.apps.ocp4.prod.psi.redhat.com)",
+		"defaultVal":     "default value for platform url",
+		"cmdDescription": "The url to the test platform (example: https://reportportal-<your_domain>.com)",
 	},
 	{
 		"cmdName":        "connector-type",
 		"valName":        "CONNECTOR_TYPE",
 		"defaultVal":     "RPCon",
-		"cmdDescription": "The type of connector you want to use(example: RPCon, PolarionCon, JiraCon)",
+		"cmdDescription": "The type of connector you want to use (example: RPCon, PolarionCon, JiraCon)",
 	},
 	{
 		"cmdName":        "launch-id",
