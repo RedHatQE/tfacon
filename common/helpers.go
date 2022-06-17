@@ -1,6 +1,7 @@
 package common
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/fatih/color"
 )
@@ -124,4 +126,26 @@ func HandleError(err error) {
 			fmt.Printf("called from %s\n", details.Name())
 		}
 	}
+}
+
+// GetIDsFromLog is a helper function that
+// extract all ids from log file and it returns
+// an array.
+func GetIDsFromLog(logPath string) []string {
+	ret := []string{}
+	file, err := os.Open(logPath)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "Getting prediction of test item(id):") {
+			str_arr := strings.Split(line, ":")
+			// fmt.Println(str_arr[len(str_arr)-1])
+			ret = append(ret, str_arr[len(str_arr)-1])
+		}
+	}
+	return ret
 }

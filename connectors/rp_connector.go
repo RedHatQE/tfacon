@@ -294,7 +294,6 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 	if re {
 		test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
 		test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
-		// result, _ := json.Marshal(c.GetREResult(test_item_name))
 		issue_info.Comment += c.GetREResult(test_item_name)
 	}
 
@@ -331,12 +330,6 @@ func (c *RPConnector) GetREResult(test_item_name string) string {
 	returned_ress := gjson.Get(string(data), "result").Str
 	err = json.Unmarshal([]byte(returned_ress), &results)
 	common.HandleError(err)
-	// fmt.Println(returned_ress)
-	// for _, res := range returned_ress {
-	// 	var result REResult
-	// 	json.Unmarshal([]byte(res.Str), result)
-	// 	results = append(results, result)
-	// }
 
 	return returned_ress
 }
@@ -369,7 +362,9 @@ func (c *RPConnector) GetDetailedIssueInfoForSingleTestID(id string) ([]byte, er
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	err = errors.Errorf("GetDetailedIssueInfoForSingleTestID error: %s", err)
+	if err != nil {
+		err = errors.Errorf("GetDetailedIssueInfoForSingleTestID error: %s", err)
+	}
 
 	return data, err
 }
@@ -625,7 +620,7 @@ func (c *RPConnector) GetAttributesByID(id string) Attributes {
 // Revert function will set all test items back to the
 // Original defect type.
 func (c *RPConnector) RevertUpdatedList(verbose bool) common.GeneralUpdatedList {
-	ids := c.GetAllTestIds()
+	ids := common.GetIDsFromLog()
 	issues := Issues{}
 
 	for _, id := range ids {

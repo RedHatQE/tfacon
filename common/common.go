@@ -21,6 +21,8 @@ type (
 	}
 )
 
+const DEFAULT_LOG_PATH string = "./tfacon.log"
+
 var TFA_DEFECT_TYPE_TO_SUB_TYPE map[string]PREDICTED_SUB_TYPE = map[string]PREDICTED_SUB_TYPE{
 	"Automation Bug": PREDICTED_AUTOMATION_BUG,
 	"Product Bug":    PREDICTED_PRODUCT_BUG,
