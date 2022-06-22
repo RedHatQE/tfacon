@@ -302,7 +302,8 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 
 	if add_attributes {
 		prediction_name := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["longName"]
-		err := c.updateAttributesForPrediction(id, prediction_name)
+		accuracy_score := gjson.Get(prediction_json, "result.probability_score").String()
+		err := c.updateAttributesForPrediction(id, prediction_name, accuracy_score)
 		common.HandleError(err)
 	}
 
@@ -495,16 +496,30 @@ func (c *RPConnector) getExistingAtrributeByID(id string) Attributes {
 	return Attributes{"attributes": attr}
 }
 
-func (c *RPConnector) updateAttributesForPrediction(id, prediction string) error {
+func (c *RPConnector) updateAttributesForPrediction(id, prediction, accuracy_score string) error {
 	existingAttribute := c.getExistingAtrributeByID(id)
 	tfa_prediction_attr := attribute{
 
 		"key":   "AI Prediction",
 		"value": prediction,
 	}
+	var tfa_accuracy_score attribute
+	if accuracy_score != "" {
+		tfa_accuracy_score = attribute{
+
+			"key":   "Prediction Score",
+			"value": accuracy_score,
+		}
+
+	}
 
 	existingAttribute["attributes"] = append(existingAttribute["attributes"], tfa_prediction_attr)
+	if accuracy_score != "" {
 
+		existingAttribute["attributes"] = append(existingAttribute["attributes"], tfa_accuracy_score)
+	}
+
+	fmt.Println(existingAttribute)
 	url := fmt.Sprintf("%s/api/v1/%s/item/%s/update", c.RPURL, c.ProjectName, id)
 	method := http.MethodPut
 	auth_token := c.AuthToken
