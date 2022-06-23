@@ -294,7 +294,7 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 	if re {
 		test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
 		test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
-		// result, _ := json.Marshal(c.GetREResult(test_item_name))
+		// result, _ := json.Marshal(c.GGetDetailedIssueInfoForSingleTestIDetREResult(test_item_name))
 		issue_info.Comment += c.GetREResult(test_item_name)
 	}
 
@@ -302,7 +302,8 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 
 	if add_attributes {
 		prediction_name := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["longName"]
-		err := c.updateAttributesForPrediction(id, prediction_name)
+		accuracy_score := gjson.Get(prediction_json, "result.probability_score").String()
+		err := c.updateAttributesForPrediction(id, prediction_name, accuracy_score)
 		common.HandleError(err)
 	}
 
@@ -326,19 +327,34 @@ func (c *RPConnector) GetREResult(test_item_name string) string {
 
 	body, _ := json.Marshal(bb)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, "", bytes.NewBuffer(body), c.Client)
-	common.HandleError(err)
-	var results REResults = []REResult{}
+	// common.HandleError(err)
+	// var results REResults = []REResult{}
 	returned_ress := gjson.Get(string(data), "result").Str
-	err = json.Unmarshal([]byte(returned_ress), &results)
+	final_text := processREReturnedText(returned_ress)
 	common.HandleError(err)
-	// fmt.Println(returned_ress)
-	// for _, res := range returned_ress {
-	// 	var result REResult
-	// 	json.Unmarshal([]byte(res.Str), result)
-	// 	results = append(results, result)
-	// }
 
-	return returned_ress
+	return final_text
+}
+
+// processREReturnedText is a helper function which
+// process the RE returned Information.
+func processREReturnedText(re_result string) string {
+	re_result_links := strings.Split(re_result, " ")[2:13]
+	var link_map map[string]string = make(map[string]string)
+	for i, val := range re_result_links {
+		if i%4 == 0 {
+			link_map[val] = re_result_links[i+2]
+		}
+	}
+	final_text := "LINK, SCORE\n"
+	index := 1
+	for key, val := range link_map {
+		// [link1](http://foo.bar), O.5
+		final_text += fmt.Sprintf("[link%d](%s): %s\n", index, key, val)
+		index += 1
+	}
+
+	return final_text
 }
 
 // BuildIssueItemConcurrent method builds Issue Item Concurrently.
@@ -369,7 +385,10 @@ func (c *RPConnector) GetDetailedIssueInfoForSingleTestID(id string) ([]byte, er
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	err = errors.Errorf("GetDetailedIssueInfoForSingleTestID error: %s", err)
+
+	if err != nil {
+		err = errors.Errorf("GetDetailedIssueInfoForSingleTestID error: %s", err)
+	}
 
 	return data, err
 }
@@ -495,15 +514,25 @@ func (c *RPConnector) getExistingAtrributeByID(id string) Attributes {
 	return Attributes{"attributes": attr}
 }
 
-func (c *RPConnector) updateAttributesForPrediction(id, prediction string) error {
+func (c *RPConnector) updateAttributesForPrediction(id, prediction, accuracy_score string) error {
 	existingAttribute := c.getExistingAtrributeByID(id)
 	tfa_prediction_attr := attribute{
 
 		"key":   "AI Prediction",
 		"value": prediction,
 	}
+	var tfa_accuracy_score attribute
+	if accuracy_score != "" {
+		tfa_accuracy_score = attribute{
 
+			"key":   "Prediction Score",
+			"value": accuracy_score,
+		}
+	}
 	existingAttribute["attributes"] = append(existingAttribute["attributes"], tfa_prediction_attr)
+	if accuracy_score != "" {
+		existingAttribute["attributes"] = append(existingAttribute["attributes"], tfa_accuracy_score)
+	}
 
 	url := fmt.Sprintf("%s/api/v1/%s/item/%s/update", c.RPURL, c.ProjectName, id)
 	method := http.MethodPut

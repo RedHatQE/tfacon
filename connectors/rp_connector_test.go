@@ -22,8 +22,9 @@ func TestRPConnector_updateAttributesForPrediction(t *testing.T) {
 		TFAURL      string
 	}
 	type args struct {
-		id         string
-		prediction string
+		id              string
+		prediction      string
+		accurracy_score string
 	}
 	tests := []struct {
 		name    string
@@ -44,7 +45,7 @@ func TestRPConnector_updateAttributesForPrediction(t *testing.T) {
 				Client:      tt.fields.Client,
 				TFAURL:      tt.fields.TFAURL,
 			}
-			if err := c.updateAttributesForPrediction(tt.args.id, tt.args.prediction); (err != nil) != tt.wantErr {
+			if err := c.updateAttributesForPrediction(tt.args.id, tt.args.prediction, tt.args.accurracy_score); (err != nil) != tt.wantErr {
 				t.Errorf("RPConnector.updateAttributesForPrediction() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
