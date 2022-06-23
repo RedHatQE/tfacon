@@ -113,6 +113,11 @@ Example Output
 2021/08/06 03:46:59 Getting prediction of test item(id): 54841
 This is the return info from update: [{"issueType":"ab001","comment":"","autoAnalyzed":false,"ignoreAnalyzer":false,"externalSystemIssues":[]},{"issueType":"ab001","comment":"","autoAnalyzed":false,"ignoreAnalyzer":false,"externalSystemIssues":[]},{"issueType":"ab001","comment":"Should be marked with custom defect type","autoAnalyzed":false,"ignoreAnalyzer":false,"externalSystemIssues":[]},{"issueType":"si001","comment":"","autoAnalyzed":false,"ignoreAnalyzer":false,"externalSystemIssues":[]},{"issueType":"ab001","comment":"Should be marked with custom defect type","autoAnalyzed":false,"ignoreAnalyzer":false,"externalSystemIssues":[]},{"issueType":"ab001","comment":"Should be marked with custom defect type","autoAnalyzed":false,"ignoreAnalyzer":false,"externalSystemIssues":[]},{"issueType":"ab001","comment":"Should be marked with custom defect type","autoAnalyzed":false,"ignoreAnalyzer":false,"externalSystemIssues":[]},{"issueType":"ab001","comment":"Should be marked with custom defect type","autoAnalyzed":false,"ignoreAnalyzer":false,"externalSystemIssues":[]},{"issueType":"pb001","comment":"Should be marked with custom defect type","autoAnalyzed":false,"ignoreAnalyzer":false,"externalSystemIssues":[]}]
 ```
+
+Example Comment on Report Portal
+
+![comment](docs/image/comment_rp.png)
+
 #### validate
 __You must use auth_token from a superadmin account to run tfacon, otherwise the validation will fail!__
 ```bash
@@ -178,7 +183,9 @@ add_attributes=true
 __You can set this to True or False, if you set it to True tfacon will deal with the test items in a faster async non-blocking way, you can disable it to have a clearer view, but you will have a slower run compared to setting it to True__
 
 #### add_attributes
-__You can enable this to add an extra attribute "AI Prediction" to all the test items, the value of this attribute will be the prediction extracted from TFA Classifier__
+__You can enable this to add extra attribute "AI Prediction" and "Prediction Score"
+to all the test items, the value of this attribute will be the prediction extracted
+from TFA Classifier__
 
 
 ## Developer Guide
