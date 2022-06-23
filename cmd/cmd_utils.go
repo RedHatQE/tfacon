@@ -19,26 +19,26 @@ var cmdInfoList []map[string]string = []map[string]string{
 	{
 		"cmdName":        "tfa-url",
 		"valName":        "TFA_URL",
-		"defaultVal":     "default val for tfa url",
+		"defaultVal":     "default value for tfa url",
 		"cmdDescription": "The url to the TFA Classifier",
 	},
 	{
 		"cmdName":        "re-url",
 		"valName":        "RE_URL",
-		"defaultVal":     "default val for re url",
+		"defaultVal":     "default value for Recommendation Engine url",
 		"cmdDescription": "The url to the Recommendation Engine",
 	},
 	{
 		"cmdName":        "platform-url",
 		"valName":        "PLATFORM_URL",
-		"defaultVal":     "default val for platform url",
-		"cmdDescription": "The url to the test platform(example: https://reportportal-ccit.apps.ocp4.prod.psi.redhat.com)",
+		"defaultVal":     "default value for platform url",
+		"cmdDescription": "The url to the test platform (example: https://reportportal-<your_domain>.com)",
 	},
 	{
 		"cmdName":        "connector-type",
 		"valName":        "CONNECTOR_TYPE",
 		"defaultVal":     "RPCon",
-		"cmdDescription": "The type of connector you want to use(example: RPCon, PolarionCon, JiraCon)",
+		"cmdDescription": "The type of connector you want to use (example: RPCon, PolarionCon, JiraCon)",
 	},
 	{
 		"cmdName":        "launch-id",
@@ -67,20 +67,27 @@ var cmdInfoList []map[string]string = []map[string]string{
 }
 
 func initConfig(viper *viper.Viper, cmd *cobra.Command, cmdInfoList []map[string]string) {
-	if os.Getenv("TFACON_YAML_PATH") != "" {
+	switch {
+	case os.Getenv("TFACON_YAML_PATH") != "":
 		index := strings.LastIndex(os.Getenv("TFACON_YAML_PATH"), "/")
 		path := os.Getenv("TFACON_YAML_PATH")[:index]
 		viper.AddConfigPath(path)
 
 		configName := strings.Split(os.Getenv("TFACON_YAML_PATH")[index+1:], ".")
 		viper.SetConfigName(configName[0])
-	} else {
+
+	case common.FileExist("./tfacon.yml") || common.FileExist("./tfacon.yaml"):
+		viper.AddConfigPath(".")
+		viper.SetConfigName("tfacon")
+
+	default:
+
+		_, err := os.Create("tfacon.yml")
+		common.HandleError(err)
 		viper.AddConfigPath(".")
 		viper.SetConfigName("tfacon")
 	}
 
-	// viper.AddConfigPath(".")
-	// viper.SetConfigName("tfacon")
 	viper.AutomaticEnv()
 
 	for _, v := range cmdInfoList {
@@ -111,7 +118,7 @@ func initTFAConfigFile(viper *viper.Viper) {
 
 	if os.Getenv("TFACON_CONFIG_PATH") != "" {
 		file, err = ioutil.ReadFile(os.Getenv("TFACON_CONFIG_PATH"))
-	} else {
+	} else if common.FileExist("./tfacon.cfg") {
 		file, err = ioutil.ReadFile("./tfacon.cfg")
 	}
 
