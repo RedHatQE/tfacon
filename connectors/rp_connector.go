@@ -64,14 +64,14 @@ func (u UpdatedList) GetSelf() common.GeneralUpdatedList {
 // RPConnector is the class for describing
 // the RPConnector engine.
 type RPConnector struct {
-	LaunchID    string `mapstructure:"LAUNCH_ID"`
-	LaunchName  string `mapstructure:"LAUNCH_NAME"`
-	ProjectName string `mapstructure:"PROJECT_NAME"`
-	AuthToken   string `mapstructure:"AUTH_TOKEN"`
-	RPURL       string `mapstructure:"PLATFORM_URL"`
+	LaunchID    string `mapstructure:"LAUNCH_ID" json:"launch_id"`
+	LaunchName  string `mapstructure:"LAUNCH_NAME" json:"launch_name"`
+	ProjectName string `mapstructure:"PROJECT_NAME" json:"project_name"`
+	AuthToken   string `mapstructure:"AUTH_TOKEN" json:"auth_token"`
+	RPURL       string `mapstructure:"PLATFORM_URL" json:"platform_url"`
 	Client      *http.Client
-	TFAURL      string `mapstructure:"TFA_URL"`
-	REURL       string `mapstructure:"RE_URL"`
+	TFAURL      string `mapstructure:"TFA_URL" json:"tfa_url"`
+	REURL       string `mapstructure:"RE_URL" json:"re_url"`
 }
 
 // Validate method validates against the input from
