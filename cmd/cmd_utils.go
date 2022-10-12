@@ -111,7 +111,7 @@ func initViperVal(cmd *cobra.Command, viper *viper.Viper, cmdName, valName, defa
 	common.HandleError(err)
 }
 
-func initTFAConfigFile(viper *viper.Viper) {
+func InitTFAConfigFile(viper *viper.Viper) {
 	var file []byte
 
 	var err error

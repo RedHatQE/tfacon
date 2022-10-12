@@ -58,7 +58,7 @@ var (
 
 func init() {
 	viperConfig = viper.New()
-	initTFAConfigFile(viperConfig)
+	InitTFAConfigFile(viperConfig)
 	err := viperConfig.Unmarshal(&cfg)
 	common.HandleError(err)
 }
