@@ -83,7 +83,7 @@ func initConfig(viper *viper.Viper, cmd *cobra.Command, cmdInfoList []map[string
 	default:
 
 		_, err := os.Create("tfacon.yml")
-		common.HandleError(err)
+		common.HandleError(err, "nopanic")
 		viper.AddConfigPath(".")
 		viper.SetConfigName("tfacon")
 	}
@@ -96,7 +96,7 @@ func initConfig(viper *viper.Viper, cmd *cobra.Command, cmdInfoList []map[string
 
 	err := viper.ReadInConfig()
 
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 }
 
 func initViperVal(cmd *cobra.Command, viper *viper.Viper, cmdName, valName, defaultVal, cmdDescription string) {
@@ -108,7 +108,7 @@ func initViperVal(cmd *cobra.Command, viper *viper.Viper, cmdName, valName, defa
 
 	cmd.PersistentFlags().StringP(cmdName, "", viper.GetString(valName), cmdDescription)
 	err := viper.BindPFlag(valName, cmd.PersistentFlags().Lookup(cmdName))
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 }
 
 func InitTFAConfigFile(viper *viper.Viper) {
@@ -125,53 +125,53 @@ func InitTFAConfigFile(viper *viper.Viper) {
 	defer func() {
 		if r := recover(); r != nil {
 			_, err = os.Create("tfacon.cfg")
-			common.HandleError(err)
+			common.HandleError(err, "nopanic")
 		}
 	}()
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	viper.SetConfigType("ini")
 	viper.SetDefault("config.concurrency", true)
 	viper.SetDefault("config.retry_times", 1)
 	viper.SetDefault("config.add_attributes", false)
 	err = viper.ReadConfig(bytes.NewBuffer(file))
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "You can add this tag to print more detailed info")
 	err = viper.BindPFlag("config.verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 
 	rootCmd.PersistentFlags().BoolP("re", "r", false,
 		"You can add this tag to let tfacon add Recommendation Engine result to comment section")
 	err = viper.BindPFlag("config.re", rootCmd.PersistentFlags().Lookup("re"))
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 }
 
 func initWorkspace() {
 	pwd, err := os.Getwd()
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	fmt.Println(pwd)
 
 	err = os.Mkdir("tfacon_workspace", fs.ModePerm)
 
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	err = os.Mkdir("/tmp/.tfacon", fs.ModePerm)
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	err = os.Chdir("/tmp/.tfacon/")
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 
 	cmd := exec.Command("git", "clone", "https://github.com/RedHatQE/tfacon.git")
 
 	err = cmd.Run()
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	err = os.Chdir("/tmp/.tfacon/tfacon")
 
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 
 	cmd = exec.Command("mv", "examples", pwd+"/tfacon_workspace")
 
 	err = cmd.Run()
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 
 	cmd = exec.Command("rm", "/tmp/.tfacon", "-rf")
 
 	err = cmd.Run()
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 }

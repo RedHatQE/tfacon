@@ -35,7 +35,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			err := cmd.Help()
-			common.HandleError(err)
+			common.HandleError(err, "nopanic")
 			os.Exit(0)
 		}
 	},
@@ -60,5 +60,5 @@ func init() {
 	viperConfig = viper.New()
 	InitTFAConfigFile(viperConfig)
 	err := viperConfig.Unmarshal(&cfg)
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 }
