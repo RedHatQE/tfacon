@@ -87,7 +87,7 @@ func GetCon(viper *viper.Viper) TFACon {
 		con = &connectors.RPConnector{Client: &http.Client{}}
 		err := viper.Unmarshal(con)
 
-		common.HandleError(err)
+		common.HandleError(err, "panic")
 	// case "POLCon":
 	// 	con = RPConnector{}
 	// case "JiraCon":
@@ -97,7 +97,7 @@ func GetCon(viper *viper.Viper) TFACon {
 
 		err := viper.Unmarshal(con)
 
-		common.HandleError(err)
+		common.HandleError(err, "panic")
 	}
 
 	return con

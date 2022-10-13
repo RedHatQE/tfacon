@@ -70,12 +70,12 @@ func SendHTTPRequest(ctx context.Context, method, url,
 	defer func() {
 		if req != nil && req.Body != nil {
 			err = req.Body.Close()
-			HandleError(err)
+			HandleError(err, "nopanic")
 		}
 
 		if resp != nil && resp.Body != nil {
 			err = resp.Body.Close()
-			HandleError(err)
+			HandleError(err, "nopanic")
 		}
 	}()
 
@@ -114,7 +114,7 @@ func httpHelper(method string, resp *http.Response) (bool, error) {
 
 // HandleError is the Error handler
 // for the whole tfacon.
-func HandleError(err error) {
+func HandleError(err error, method string) {
 	if err != nil {
 		// print out the caller information
 		pc, _, _, ok := runtime.Caller(1)
@@ -122,6 +122,11 @@ func HandleError(err error) {
 		if ok && details != nil {
 			fmt.Printf("called from %s\n", details.Name())
 		}
-		panic(err)
+		if method == "panic" {
+			panic(err)
+
+		} else {
+			fmt.Println(err)
+		}
 	}
 }

@@ -111,7 +111,7 @@ func (c *RPConnector) validateTFAURL(verbose bool) (bool, error) {
 		c.TFAURL, "", bytes.NewBuffer([]byte(body)), c.Client)
 	if err != nil {
 		err = fmt.Errorf("validate tfa url failed: %w", err)
-		common.HandleError(err)
+		common.HandleError(err, "nopanic")
 	}
 
 	if verbose {
@@ -157,7 +157,7 @@ func (c *RPConnector) validateRPURLAndAuthToken(verbose bool) (bool, error) {
 		c.RPURL+"/api/v1/project/list", c.AuthToken, bytes.NewBuffer(nil), c.Client)
 	if err != nil {
 		err = fmt.Errorf("validate rp url and auth token failed: %w", err)
-		common.HandleError(err)
+		common.HandleError(err, "nopanic")
 	}
 
 	if verbose {
@@ -304,7 +304,7 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 		prediction_name := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["longName"]
 		accuracy_score := gjson.Get(prediction_json, "result.probability_score").String()
 		err := c.updateAttributesForPrediction(id, prediction_name, accuracy_score)
-		common.HandleError(err)
+		common.HandleError(err, "panic")
 	}
 
 	return issue_item
@@ -327,11 +327,9 @@ func (c *RPConnector) GetREResult(test_item_name string) string {
 
 	body, _ := json.Marshal(bb)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, "", bytes.NewBuffer(body), c.Client)
-	// common.HandleError(err)
-	// var results REResults = []REResult{}
 	returned_ress := gjson.Get(string(data), "result").Str
 	final_text := processREReturnedText(returned_ress)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	return final_text
 }
@@ -396,13 +394,13 @@ func (c *RPConnector) GetDetailedIssueInfoForSingleTestID(id string) ([]byte, er
 // GetIssueInfoForSingleTestId method returns the issueinfo with the issue(test item) id.
 func (c *RPConnector) GetIssueInfoForSingleTestID(id string) IssueInfo {
 	data, err := c.GetDetailedIssueInfoForSingleTestID(id)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	issue_info_str := gjson.Get(string(data), "content.0.issue").String()
 
 	var issue_info IssueInfo
 	err = json.Unmarshal([]byte(issue_info_str), &issue_info)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	return issue_info
 }
@@ -447,7 +445,7 @@ func (c *RPConnector) GetAllTestIds() []string {
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	a := gjson.Get(string(data), "content")
 
@@ -474,7 +472,7 @@ func (c *RPConnector) GetTestLog(test_id string) []string {
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	a := gjson.Get(string(data), "content")
 
@@ -498,18 +496,18 @@ func (c *RPConnector) getExistingAtrributeByID(id string) Attributes {
 
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	if err != nil {
 		err = fmt.Errorf("Get attibute failed:%w", err)
-		common.HandleError(err)
+		common.HandleError(err, "panic")
 	}
 
 	attrs := gjson.Get(string(data), "attributes").String()
 	attr := []attribute{}
 
 	err = json.Unmarshal([]byte(attrs), &attr)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	return Attributes{"attributes": attr}
 }
@@ -538,7 +536,7 @@ func (c *RPConnector) updateAttributesForPrediction(id, prediction, accuracy_sco
 	method := http.MethodPut
 	auth_token := c.AuthToken
 	d, err := json.Marshal(existingAttribute)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	body := bytes.NewBuffer(d)
 	_, _, err = common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
@@ -573,7 +571,7 @@ func (c *RPConnector) InitConnector() {
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, success, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	if !success {
 		fmt.Printf("created defect types failed, please use superadmin auth_token%t", success)
@@ -647,7 +645,7 @@ func (c *RPConnector) GetAttributesByID(id string) Attributes {
 
 	attr := Attributes{}
 	err = json.Unmarshal([]byte(attributes), &attr)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	return attr
 }
