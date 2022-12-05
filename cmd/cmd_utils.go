@@ -47,6 +47,12 @@ var cmdInfoList []map[string]string = []map[string]string{
 		"cmdDescription": "The launch id of report portal",
 	},
 	{
+		"cmdName":        "launch-uuid",
+		"valName":        "LAUNCH_UUID",
+		"defaultVal":     "",
+		"cmdDescription": "The launch uuid of report portal",
+	},
+	{
 		"cmdName":        "project-name",
 		"valName":        "PROJECT_NAME",
 		"defaultVal":     "",

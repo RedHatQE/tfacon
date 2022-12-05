@@ -4,4 +4,5 @@ testingfile/
 /tfacon
 /.vscode
 pip_package/tfacon_pip/tfacon_binary/tfacon
+pip_package/tfacon.eg-info/
 tfacon_workspace/

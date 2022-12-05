@@ -65,6 +65,7 @@ func (u UpdatedList) GetSelf() common.GeneralUpdatedList {
 // the RPConnector engine.
 type RPConnector struct {
 	LaunchID    string `mapstructure:"LAUNCH_ID" json:"launch_id"`
+	UUID        string `mapstructure:"LAUNCH_UUID" json:"uuid"`
 	LaunchName  string `mapstructure:"LAUNCH_NAME" json:"launch_name"`
 	ProjectName string `mapstructure:"PROJECT_NAME" json:"project_name"`
 	AuthToken   string `mapstructure:"AUTH_TOKEN" json:"auth_token"`
@@ -122,7 +123,7 @@ func (c *RPConnector) validateTFAURL(verbose bool) (bool, error) {
 }
 
 func (c *RPConnector) validateLaunchInfo(verbose bool) (bool, error) {
-	launchinfoNotEmpty := c.LaunchID != "" || c.LaunchName != ""
+	launchinfoNotEmpty := c.LaunchID != "" || c.LaunchName != "" || c.UUID != ""
 
 	if verbose {
 		fmt.Printf("lauchinfoValidate: %t\n", launchinfoNotEmpty)
@@ -608,9 +609,7 @@ func (c *RPConnector) InitConnector() {
 	}
 }
 
-// GetLaunchID returns launch id with the launch name
-// this method will be called when user don't have launchid input.
-func (c *RPConnector) GetLaunchID() string {
+func (c *RPConnector) GetLaunchIDByName() string {
 	launchinfo := strings.Split(c.LaunchName, "#")
 	launchName := url.QueryEscape(strings.TrimSpace(launchinfo[0]))
 	url := fmt.Sprintf("%s/api/v1/%s/launch?filter.eq.name=%s&filter.eq.number=%s",
@@ -623,9 +622,40 @@ func (c *RPConnector) GetLaunchID() string {
 		fmt.Printf("Get Launch Id failed: %v", string(data))
 	}
 
-	launchid := gjson.Get(string(data), "content.0.id").String()
+	launchId := gjson.Get(string(data), "content.0.id").String()
 
-	return launchid
+	return launchId
+
+}
+
+func (c *RPConnector) GetLaunchIDByUUID() string {
+
+	url := fmt.Sprintf("%s/api/v1/%s/launch?filter.eq.uuid=%s",
+		c.RPURL, c.ProjectName, c.UUID)
+	method := http.MethodGet
+	auth_token := c.AuthToken
+	body := bytes.NewBuffer(nil)
+	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
+	if err != nil {
+		fmt.Printf("Get Launch Id failed: %v", string(data))
+	}
+
+	launchId := gjson.Get(string(data), "content.0.id").String()
+
+	return launchId
+
+}
+
+// GetLaunchID returns launch id with the launch name
+// this method will be called when user don't have launchid input.
+func (c *RPConnector) GetLaunchID() string {
+	if c.LaunchName != "" {
+		return c.GetLaunchIDByName()
+	} else if c.UUID != "" {
+		return c.GetLaunchIDByUUID()
+	} else {
+		return ""
+	}
 }
 
 type Attributes map[string][]attribute
