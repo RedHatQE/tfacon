@@ -65,7 +65,7 @@ func (u UpdatedList) GetSelf() common.GeneralUpdatedList {
 // the RPConnector engine.
 type RPConnector struct {
 	LaunchID    string `mapstructure:"LAUNCH_ID" json:"launch_id"`
-	UUID        string `mapstructure:"LAUNCH_UUID" json:"uuid"`
+	LaunchUUID  string `mapstructure:"LAUNCH_UUID" json:"uuid"`
 	LaunchName  string `mapstructure:"LAUNCH_NAME" json:"launch_name"`
 	ProjectName string `mapstructure:"PROJECT_NAME" json:"project_name"`
 	AuthToken   string `mapstructure:"AUTH_TOKEN" json:"auth_token"`
@@ -123,7 +123,7 @@ func (c *RPConnector) validateTFAURL(verbose bool) (bool, error) {
 }
 
 func (c *RPConnector) validateLaunchInfo(verbose bool) (bool, error) {
-	launchinfoNotEmpty := c.LaunchID != "" || c.LaunchName != "" || c.UUID != ""
+	launchinfoNotEmpty := c.LaunchID != "" || c.LaunchName != "" || c.LaunchUUID != ""
 
 	if verbose {
 		fmt.Printf("lauchinfoValidate: %t\n", launchinfoNotEmpty)
@@ -631,7 +631,7 @@ func (c *RPConnector) GetLaunchIDByName() string {
 func (c *RPConnector) GetLaunchIDByUUID() string {
 
 	url := fmt.Sprintf("%s/api/v1/%s/launch?filter.eq.uuid=%s",
-		c.RPURL, c.ProjectName, c.UUID)
+		c.RPURL, c.ProjectName, c.LaunchUUID)
 	method := http.MethodGet
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
@@ -651,7 +651,7 @@ func (c *RPConnector) GetLaunchIDByUUID() string {
 func (c *RPConnector) GetLaunchID() string {
 	if c.LaunchName != "" {
 		return c.GetLaunchIDByName()
-	} else if c.UUID != "" {
+	} else if c.LaunchUUID != "" {
 		return c.GetLaunchIDByUUID()
 	} else {
 		return ""
