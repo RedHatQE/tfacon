@@ -65,7 +65,7 @@ func (u UpdatedList) GetSelf() common.GeneralUpdatedList {
 // the RPConnector engine.
 type RPConnector struct {
 	LaunchID    string `mapstructure:"LAUNCH_ID" json:"launch_id"`
-	UUID        string `mapstructure:"LAUNCH_UUID" json:"uuid"`
+	LaunchUUID  string `mapstructure:"LAUNCH_UUID" json:"uuid"`
 	LaunchName  string `mapstructure:"LAUNCH_NAME" json:"launch_name"`
 	ProjectName string `mapstructure:"PROJECT_NAME" json:"project_name"`
 	AuthToken   string `mapstructure:"AUTH_TOKEN" json:"auth_token"`
@@ -123,7 +123,7 @@ func (c *RPConnector) validateTFAURL(verbose bool) (bool, error) {
 }
 
 func (c *RPConnector) validateLaunchInfo(verbose bool) (bool, error) {
-	launchinfoNotEmpty := c.LaunchID != "" || c.LaunchName != "" || c.UUID != ""
+	launchinfoNotEmpty := c.LaunchID != "" || c.LaunchName != "" || c.LaunchUUID != ""
 
 	if verbose {
 		fmt.Printf("lauchinfoValidate: %t\n", launchinfoNotEmpty)
@@ -293,10 +293,10 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 
 	// Update the comment with re result
 	if re {
-		test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
-		test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
+		// test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
+		// test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
 		// result, _ := json.Marshal(c.GGetDetailedIssueInfoForSingleTestIDetREResult(test_item_name))
-		issue_info.Comment += c.GetREResult(test_item_name)
+		issue_info.Comment += c.GetREResult(id)
 	}
 
 	var issue_item IssueItem = IssueItem{Issue: issue_info, TestItemID: id}
@@ -313,16 +313,41 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 
 // RERequestBody is the struct of request body for Recommendation Engine.
 type RERequestBody struct {
-	TestItemName string `json:"test_item_name"`
+	ProjectName string `json:"project_name"`
+	LogMsg      string `json:"log_message"`
 }
 
+type LogMsgRequestBody struct {
+	TestItemID []int  `json:"itemIds"`
+	LogLevel   string `json:"logLevel"`
+}
 type REResults []REResult
 
+// getLogMsg will return the log msg about the current test_item
+// func (c *RPConnector) getLogMsg(id string) string {
+// 	url := fmt.Sprintf("%s/api/v1/%s/log/under",
+// 		c.RPURL, c.ProjectName)
+// 	method := http.MethodPost
+
+// 	id_int, _ := strconv.Atoi(id)
+// 	var logMsgRequestBody LogMsgRequestBody = LogMsgRequestBody{TestItemID: []int{id_int}, LogLevel: "trace"}
+// 	body, _ := json.Marshal(logMsgRequestBody)
+// 	fmt.Println(string(body))
+// 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, "", bytes.NewBuffer(body), c.Client)
+// 	fmt.Println(string(data))
+// 	returned_ress := gjson.Get(string(data), "result").Str
+// 	final_text := processREReturnedText(returned_ress)
+// 	common.HandleError(err, "panic")
+// 	return final_text
+// }
+
 // GetREResult can extract the returned re result.
-func (c *RPConnector) GetREResult(test_item_name string) string {
+func (c *RPConnector) GetREResult(id string) string {
 	url := c.REURL
 	method := http.MethodPost
-	var b RERequestBody = RERequestBody{TestItemName: test_item_name}
+	logMsg := c.GetTestLog(id)
+	logMsgCombined := strings.Join(logMsg, "\n")
+	var b RERequestBody = RERequestBody{ProjectName: c.ProjectName, LogMsg: logMsgCombined}
 
 	var bb map[string]RERequestBody = map[string]RERequestBody{"data": b}
 
@@ -338,22 +363,22 @@ func (c *RPConnector) GetREResult(test_item_name string) string {
 // processREReturnedText is a helper function which
 // process the RE returned Information.
 func processREReturnedText(re_result string) string {
-	re_result_links := strings.Split(re_result, " ")[2:13]
-	var link_map map[string]string = make(map[string]string)
-	for i, val := range re_result_links {
-		if i%4 == 0 {
-			link_map[val] = re_result_links[i+2]
-		}
-	}
-	final_text := "LINK, SCORE\n"
-	index := 1
-	for key, val := range link_map {
-		// [link1](http://foo.bar), O.5
-		final_text += fmt.Sprintf("[link%d](%s): %s\n", index, key, val)
-		index += 1
-	}
+	// re_result_links := strings.Split(re_result, " ")[2:13]
+	// var link_map map[string]string = make(map[string]string)
+	// for i, val := range re_result_links {
+	// 	if i%4 == 0 {
+	// 		link_map[val] = re_result_links[i+2]
+	// 	}
+	// }
+	// final_text := "LINK, SCORE\n"
+	// index := 1
+	// for key, val := range link_map {
+	// 	// [link1](http://foo.bar), O.5
+	// 	final_text += fmt.Sprintf("[link%d](%s): %s\n", index, key, val)
+	// 	index += 1
+	// }
 
-	return final_text
+	return re_result
 }
 
 // BuildIssueItemConcurrent method builds Issue Item Concurrently.
@@ -631,7 +656,7 @@ func (c *RPConnector) GetLaunchIDByName() string {
 func (c *RPConnector) GetLaunchIDByUUID() string {
 
 	url := fmt.Sprintf("%s/api/v1/%s/launch?filter.eq.uuid=%s",
-		c.RPURL, c.ProjectName, c.UUID)
+		c.RPURL, c.ProjectName, c.LaunchUUID)
 	method := http.MethodGet
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
@@ -651,7 +676,7 @@ func (c *RPConnector) GetLaunchIDByUUID() string {
 func (c *RPConnector) GetLaunchID() string {
 	if c.LaunchName != "" {
 		return c.GetLaunchIDByName()
-	} else if c.UUID != "" {
+	} else if c.LaunchUUID != "" {
 		return c.GetLaunchIDByUUID()
 	} else {
 		return ""
