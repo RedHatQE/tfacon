@@ -20,10 +20,10 @@ func buildTestingViper(configName, configPath string) *viper.Viper {
 	vipertfaconfortest.SetConfigName(configName)
 	vipertfaconfortest.AddConfigPath(configPath)
 	err := vipertfaconfortest.ReadInConfig()
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	rpcon := buildEmptyRPCon()
 	err = vipertfaconfortest.Unmarshal(rpcon)
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	return vipertfaconfortest
 }
 func buildEmptyRPCon() *connectors.RPConnector {
@@ -37,7 +37,7 @@ func rpconWithAllParameters() *connectors.RPConnector {
 	rpcon := buildEmptyRPCon()
 	viper := buildTestingViper("tfacon", testDataPath())
 	err := viper.Unmarshal(rpcon)
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	return rpcon
 }
 func TestGetCon(t *testing.T) {
@@ -103,17 +103,17 @@ func viperConfig() *viper.Viper {
 	defer func() {
 		if r := recover(); r != nil {
 			_, err = os.Create("tfacon.cfg")
-			common.HandleError(err)
+			common.HandleError(err, "nopanic")
 		}
 	}()
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	viperConfig := viper.New()
 	viperConfig.SetConfigType("ini")
 	viperConfig.SetDefault("config.concurrency", true)
 	viperConfig.SetDefault("config.retry_times", 1)
 	viperConfig.SetDefault("config.add_attributes", false)
 	err = viperConfig.ReadConfig(bytes.NewBuffer(file))
-	common.HandleError(err)
+	common.HandleError(err, "nopanic")
 	return viperConfig
 }
 

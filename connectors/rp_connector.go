@@ -64,14 +64,15 @@ func (u UpdatedList) GetSelf() common.GeneralUpdatedList {
 // RPConnector is the class for describing
 // the RPConnector engine.
 type RPConnector struct {
-	LaunchID    string `mapstructure:"LAUNCH_ID"`
-	LaunchName  string `mapstructure:"LAUNCH_NAME"`
-	ProjectName string `mapstructure:"PROJECT_NAME"`
-	AuthToken   string `mapstructure:"AUTH_TOKEN"`
-	RPURL       string `mapstructure:"PLATFORM_URL"`
+	LaunchID    string `mapstructure:"LAUNCH_ID" json:"launch_id"`
+	LaunchUUID  string `mapstructure:"LAUNCH_UUID" json:"uuid"`
+	LaunchName  string `mapstructure:"LAUNCH_NAME" json:"launch_name"`
+	ProjectName string `mapstructure:"PROJECT_NAME" json:"project_name"`
+	AuthToken   string `mapstructure:"AUTH_TOKEN" json:"auth_token"`
+	RPURL       string `mapstructure:"PLATFORM_URL" json:"platform_url"`
 	Client      *http.Client
-	TFAURL      string `mapstructure:"TFA_URL"`
-	REURL       string `mapstructure:"RE_URL"`
+	TFAURL      string `mapstructure:"TFA_URL" json:"tfa_url"`
+	REURL       string `mapstructure:"RE_URL" json:"re_url"`
 }
 
 // Validate method validates against the input from
@@ -111,7 +112,7 @@ func (c *RPConnector) validateTFAURL(verbose bool) (bool, error) {
 		c.TFAURL, "", bytes.NewBuffer([]byte(body)), c.Client)
 	if err != nil {
 		err = fmt.Errorf("validate tfa url failed: %w", err)
-		common.HandleError(err)
+		common.HandleError(err, "nopanic")
 	}
 
 	if verbose {
@@ -122,7 +123,7 @@ func (c *RPConnector) validateTFAURL(verbose bool) (bool, error) {
 }
 
 func (c *RPConnector) validateLaunchInfo(verbose bool) (bool, error) {
-	launchinfoNotEmpty := c.LaunchID != "" || c.LaunchName != ""
+	launchinfoNotEmpty := c.LaunchID != "" || c.LaunchName != "" || c.LaunchUUID != ""
 
 	if verbose {
 		fmt.Printf("lauchinfoValidate: %t\n", launchinfoNotEmpty)
@@ -157,7 +158,7 @@ func (c *RPConnector) validateRPURLAndAuthToken(verbose bool) (bool, error) {
 		c.RPURL+"/api/v1/project/list", c.AuthToken, bytes.NewBuffer(nil), c.Client)
 	if err != nil {
 		err = fmt.Errorf("validate rp url and auth token failed: %w", err)
-		common.HandleError(err)
+		common.HandleError(err, "nopanic")
 	}
 
 	if verbose {
@@ -292,10 +293,10 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 
 	// Update the comment with re result
 	if re {
-		test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
-		test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
+		// test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
+		// test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
 		// result, _ := json.Marshal(c.GGetDetailedIssueInfoForSingleTestIDetREResult(test_item_name))
-		issue_info.Comment += c.GetREResult(test_item_name)
+		issue_info.Comment += c.GetREResult(id)
 	}
 
 	var issue_item IssueItem = IssueItem{Issue: issue_info, TestItemID: id}
@@ -304,7 +305,7 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 		prediction_name := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["longName"]
 		accuracy_score := gjson.Get(prediction_json, "result.probability_score").String()
 		err := c.updateAttributesForPrediction(id, prediction_name, accuracy_score)
-		common.HandleError(err)
+		common.HandleError(err, "panic")
 	}
 
 	return issue_item
@@ -312,26 +313,49 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 
 // RERequestBody is the struct of request body for Recommendation Engine.
 type RERequestBody struct {
-	TestItemName string `json:"test_item_name"`
+	ProjectName string `json:"project_name"`
+	LogMsg      string `json:"log_message"`
 }
 
+type LogMsgRequestBody struct {
+	TestItemID []int  `json:"itemIds"`
+	LogLevel   string `json:"logLevel"`
+}
 type REResults []REResult
 
+// getLogMsg will return the log msg about the current test_item
+// func (c *RPConnector) getLogMsg(id string) string {
+// 	url := fmt.Sprintf("%s/api/v1/%s/log/under",
+// 		c.RPURL, c.ProjectName)
+// 	method := http.MethodPost
+
+// 	id_int, _ := strconv.Atoi(id)
+// 	var logMsgRequestBody LogMsgRequestBody = LogMsgRequestBody{TestItemID: []int{id_int}, LogLevel: "trace"}
+// 	body, _ := json.Marshal(logMsgRequestBody)
+// 	fmt.Println(string(body))
+// 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, "", bytes.NewBuffer(body), c.Client)
+// 	fmt.Println(string(data))
+// 	returned_ress := gjson.Get(string(data), "result").Str
+// 	final_text := processREReturnedText(returned_ress)
+// 	common.HandleError(err, "panic")
+// 	return final_text
+// }
+
 // GetREResult can extract the returned re result.
-func (c *RPConnector) GetREResult(test_item_name string) string {
+func (c *RPConnector) GetREResult(id string) string {
 	url := c.REURL
 	method := http.MethodPost
-	var b RERequestBody = RERequestBody{TestItemName: test_item_name}
+	logMsg := c.GetTestLog(id)
+	logMsgCombined := strings.Join(logMsg, "\n")
+	var b RERequestBody = RERequestBody{ProjectName: c.ProjectName, LogMsg: logMsgCombined}
 
 	var bb map[string]RERequestBody = map[string]RERequestBody{"data": b}
 
 	body, _ := json.Marshal(bb)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, "", bytes.NewBuffer(body), c.Client)
-	// common.HandleError(err)
-	// var results REResults = []REResult{}
 	returned_ress := gjson.Get(string(data), "result").Str
 	final_text := processREReturnedText(returned_ress)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	return final_text
 }
@@ -339,22 +363,22 @@ func (c *RPConnector) GetREResult(test_item_name string) string {
 // processREReturnedText is a helper function which
 // process the RE returned Information.
 func processREReturnedText(re_result string) string {
-	re_result_links := strings.Split(re_result, " ")[2:13]
-	var link_map map[string]string = make(map[string]string)
-	for i, val := range re_result_links {
-		if i%4 == 0 {
-			link_map[val] = re_result_links[i+2]
-		}
-	}
-	final_text := "LINK, SCORE\n"
-	index := 1
-	for key, val := range link_map {
-		// [link1](http://foo.bar), O.5
-		final_text += fmt.Sprintf("[link%d](%s): %s\n", index, key, val)
-		index += 1
-	}
+	// re_result_links := strings.Split(re_result, " ")[2:13]
+	// var link_map map[string]string = make(map[string]string)
+	// for i, val := range re_result_links {
+	// 	if i%4 == 0 {
+	// 		link_map[val] = re_result_links[i+2]
+	// 	}
+	// }
+	// final_text := "LINK, SCORE\n"
+	// index := 1
+	// for key, val := range link_map {
+	// 	// [link1](http://foo.bar), O.5
+	// 	final_text += fmt.Sprintf("[link%d](%s): %s\n", index, key, val)
+	// 	index += 1
+	// }
 
-	return final_text
+	return re_result
 }
 
 // BuildIssueItemConcurrent method builds Issue Item Concurrently.
@@ -396,13 +420,13 @@ func (c *RPConnector) GetDetailedIssueInfoForSingleTestID(id string) ([]byte, er
 // GetIssueInfoForSingleTestId method returns the issueinfo with the issue(test item) id.
 func (c *RPConnector) GetIssueInfoForSingleTestID(id string) IssueInfo {
 	data, err := c.GetDetailedIssueInfoForSingleTestID(id)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	issue_info_str := gjson.Get(string(data), "content.0.issue").String()
 
 	var issue_info IssueInfo
 	err = json.Unmarshal([]byte(issue_info_str), &issue_info)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	return issue_info
 }
@@ -447,7 +471,7 @@ func (c *RPConnector) GetAllTestIds() []string {
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	a := gjson.Get(string(data), "content")
 
@@ -474,7 +498,7 @@ func (c *RPConnector) GetTestLog(test_id string) []string {
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	a := gjson.Get(string(data), "content")
 
@@ -498,18 +522,18 @@ func (c *RPConnector) getExistingAtrributeByID(id string) Attributes {
 
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	if err != nil {
 		err = fmt.Errorf("Get attibute failed:%w", err)
-		common.HandleError(err)
+		common.HandleError(err, "panic")
 	}
 
 	attrs := gjson.Get(string(data), "attributes").String()
 	attr := []attribute{}
 
 	err = json.Unmarshal([]byte(attrs), &attr)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	return Attributes{"attributes": attr}
 }
@@ -538,7 +562,7 @@ func (c *RPConnector) updateAttributesForPrediction(id, prediction, accuracy_sco
 	method := http.MethodPut
 	auth_token := c.AuthToken
 	d, err := json.Marshal(existingAttribute)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	body := bytes.NewBuffer(d)
 	_, _, err = common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
@@ -566,13 +590,14 @@ func getExistingDefectTypeLocatorID(gjson_obj []gjson.Result, defect_type string
 // InitConnector create defect types before doing all sync/update job
 // this method will run before everything.
 func (c *RPConnector) InitConnector() {
+	c.RPURL = strings.TrimSuffix(c.RPURL, "/")
 	fmt.Println("Initializing Defect Types...")
 	url := fmt.Sprintf("%s/api/v1/%s/settings", c.RPURL, c.ProjectName)
 	method := http.MethodGet
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, success, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	if !success {
 		fmt.Printf("created defect types failed, please use superadmin auth_token%t", success)
@@ -609,9 +634,7 @@ func (c *RPConnector) InitConnector() {
 	}
 }
 
-// GetLaunchID returns launch id with the launch name
-// this method will be called when user don't have launchid input.
-func (c *RPConnector) GetLaunchID() string {
+func (c *RPConnector) GetLaunchIDByName() string {
 	launchinfo := strings.Split(c.LaunchName, "#")
 	launchName := url.QueryEscape(strings.TrimSpace(launchinfo[0]))
 	url := fmt.Sprintf("%s/api/v1/%s/launch?filter.eq.name=%s&filter.eq.number=%s",
@@ -624,9 +647,40 @@ func (c *RPConnector) GetLaunchID() string {
 		fmt.Printf("Get Launch Id failed: %v", string(data))
 	}
 
-	launchid := gjson.Get(string(data), "content.0.id").String()
+	launchId := gjson.Get(string(data), "content.0.id").String()
 
-	return launchid
+	return launchId
+
+}
+
+func (c *RPConnector) GetLaunchIDByUUID() string {
+
+	url := fmt.Sprintf("%s/api/v1/%s/launch?filter.eq.uuid=%s",
+		c.RPURL, c.ProjectName, c.LaunchUUID)
+	method := http.MethodGet
+	auth_token := c.AuthToken
+	body := bytes.NewBuffer(nil)
+	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
+	if err != nil {
+		fmt.Printf("Get Launch Id failed: %v", string(data))
+	}
+
+	launchId := gjson.Get(string(data), "content.0.id").String()
+
+	return launchId
+
+}
+
+// GetLaunchID returns launch id with the launch name
+// this method will be called when user don't have launchid input.
+func (c *RPConnector) GetLaunchID() string {
+	if c.LaunchName != "" {
+		return c.GetLaunchIDByName()
+	} else if c.LaunchUUID != "" {
+		return c.GetLaunchIDByUUID()
+	} else {
+		return ""
+	}
 }
 
 type Attributes map[string][]attribute
@@ -646,7 +700,7 @@ func (c *RPConnector) GetAttributesByID(id string) Attributes {
 
 	attr := Attributes{}
 	err = json.Unmarshal([]byte(attributes), &attr)
-	common.HandleError(err)
+	common.HandleError(err, "panic")
 
 	return attr
 }
