@@ -39,7 +39,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(0)
 		}
 	},
-	Version: "1.0.3",
+	Version: "1.1.1",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
