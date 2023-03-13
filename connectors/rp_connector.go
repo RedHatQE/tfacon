@@ -231,8 +231,8 @@ func (c *RPConnector) BuildIssues(ids []string, concurrent bool, add_attributes 
 	}
 
 	for _, id := range ids {
-		issues = append(issues, c.BuildIssueItemHelper(id, add_attributes, re))
 		log.Printf("Getting prediction of test item(id): %s\n", id)
+		issues = append(issues, c.BuildIssueItemHelper(id, add_attributes, re))
 	}
 
 	return issues
@@ -281,15 +281,16 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 	var tfa_input common.TFAInput = c.BuildTFAInput(id, testlog)
 	prediction_json := c.GetPrediction(id, tfa_input)
 	prediction := gjson.Get(prediction_json, "result.prediction").String()
-	// Added a default defect type
-	if common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction] == nil {
-		prediction = "Automation Bug"
-	}
-
-	prediction_code := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["locator"]
-	// fmt.Println(prediction_code)
 	var issue_info IssueInfo = c.GetIssueInfoForSingleTestID(id)
-	issue_info.IssueType = prediction_code
+	// Added a default defect type
+	if common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction] != nil {
+
+		prediction_code := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["locator"]
+		// fmt.Println(prediction_code)
+		issue_info.IssueType = prediction_code
+	} else {
+		log.Print("The predictions were not extracted correctly, so no update will be made!")
+	}
 
 	// Update the comment with re result
 	if re {
@@ -372,9 +373,9 @@ func (c *RPConnector) BuildIssueItemConcurrent(issuesChan chan<- IssueItem, idsC
 			break
 		}
 
+		log.Printf("Getting prediction of test item(id): %s\n", id)
 		issuesChan <- c.BuildIssueItemHelper(id, add_attributes, re)
 
-		log.Printf("Getting prediction of test item(id): %s\n", id)
 	}
 	exitChan <- true
 }
