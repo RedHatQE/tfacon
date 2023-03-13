@@ -200,7 +200,7 @@ func (c *RPConnector) UpdateAll(updatedListOfIssues common.GeneralUpdatedList, v
 
 	data, success, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
 	if err != nil {
-		panic(fmt.Sprintf("Updated All failed: %s", err))
+		common.HandleError(errors.Errorf("Updated All failed: %s", err), "nopanic")
 	}
 
 	if verbose {
@@ -429,7 +429,7 @@ func (c *RPConnector) GetPrediction(id string, tfa_input common.TFAInput) string
 
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
 	if err != nil {
-		panic(err)
+		common.HandleError(err, "nopanic")
 	}
 
 	return string(data)
@@ -600,7 +600,9 @@ func (c *RPConnector) InitConnector() {
 
 			data, success, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
 			if err != nil {
-				panic(fmt.Errorf("read response body failed: %w", err))
+
+				err = errors.Errorf("read response body failed: %s", err)
+				common.HandleError(err, "nopanic")
 			}
 
 			if !success {
