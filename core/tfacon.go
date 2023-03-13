@@ -43,6 +43,9 @@ func Run(viperRun, viperConfig *viper.Viper) {
 		fmt.Printf("This is the %d retry\n", original_retry-retry+1)
 		retry--
 	}
+	if len(con.GetAllTestIds()) != 0 {
+		panic("Update Failed, check the tfa-c/tfa-r service")
+	}
 }
 
 func runHelper(viperConfig *viper.Viper, ids []string, con TFACon, operation string) {
