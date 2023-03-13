@@ -34,7 +34,15 @@ func Run(viperRun, viperConfig *viper.Viper) {
 	var con TFACon = GetCon(viperRun)
 
 	con.InitConnector()
-	runHelper(viperConfig, con.GetAllTestIds(), con, "run")
+	ids := con.GetAllTestIds()
+	retry := viperConfig.GetInt("config.retry_times")
+	original_retry := retry
+	for len(ids) != 0 && retry > 0 {
+		runHelper(viperConfig, ids, con, "run")
+		ids = con.GetAllTestIds()
+		fmt.Printf("This is the %d retry\n", original_retry-retry+1)
+		retry--
+	}
 }
 
 func runHelper(viperConfig *viper.Viper, ids []string, con TFACon, operation string) {
@@ -55,7 +63,6 @@ func runHelper(viperConfig *viper.Viper, ids []string, con TFACon, operation str
 	}
 	// Doing this because the api can only take 20 items per request
 	con.UpdateAll(updated_list_of_issues, viperConfig.GetBool("config.verbose"))
-	runHelper(viperConfig, con.GetAllTestIds(), con, operation)
 }
 
 // GetInfo method is the get info operation for any type of connector that
