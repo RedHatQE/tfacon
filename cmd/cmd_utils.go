@@ -59,6 +59,12 @@ var cmdInfoList []map[string]string = []map[string]string{
 		"cmdDescription": "The project name of report portal",
 	},
 	{
+		"cmdName":        "team-name",
+		"valName":        "TEAM_NAME",
+		"defaultVal":     "",
+		"cmdDescription": "Your team name",
+	},
+	{
 		"cmdName":        "auth-token",
 		"valName":        "AUTH_TOKEN",
 		"defaultVal":     "",

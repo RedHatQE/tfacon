@@ -68,6 +68,7 @@ type RPConnector struct {
 	LaunchUUID  string `mapstructure:"LAUNCH_UUID" json:"uuid"`
 	LaunchName  string `mapstructure:"LAUNCH_NAME" json:"launch_name"`
 	ProjectName string `mapstructure:"PROJECT_NAME" json:"project_name"`
+	TeamName    string `mapstructure:"TEAM_NAME" json:"team_name"`
 	AuthToken   string `mapstructure:"AUTH_TOKEN" json:"auth_token"`
 	RPURL       string `mapstructure:"PLATFORM_URL" json:"platform_url"`
 	Client      *http.Client
@@ -316,6 +317,7 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 type RERequestBody struct {
 	ProjectName string `json:"project_name"`
 	LogMsg      string `json:"log_message"`
+	TeamName    string `json:"TEAM"`
 }
 
 type LogMsgRequestBody struct {
@@ -330,7 +332,7 @@ func (c *RPConnector) GetREResult(id string) string {
 	method := http.MethodPost
 	logMsg := c.GetTestLog(id)
 	logMsgCombined := strings.Join(logMsg, "\n")
-	var b RERequestBody = RERequestBody{ProjectName: c.ProjectName, LogMsg: logMsgCombined}
+	var b RERequestBody = RERequestBody{ProjectName: c.ProjectName, LogMsg: logMsgCombined, TeamName: c.TeamName}
 
 	var bb map[string]RERequestBody = map[string]RERequestBody{"data": b}
 
