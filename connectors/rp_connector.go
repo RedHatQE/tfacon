@@ -68,6 +68,7 @@ type RPConnector struct {
 	LaunchUUID  string `mapstructure:"LAUNCH_UUID" json:"uuid"`
 	LaunchName  string `mapstructure:"LAUNCH_NAME" json:"launch_name"`
 	ProjectName string `mapstructure:"PROJECT_NAME" json:"project_name"`
+	TeamName    string `mapstructure:"TEAM_NAME" json:"team_name"`
 	AuthToken   string `mapstructure:"AUTH_TOKEN" json:"auth_token"`
 	RPURL       string `mapstructure:"PLATFORM_URL" json:"platform_url"`
 	Client      *http.Client
@@ -200,7 +201,7 @@ func (c *RPConnector) UpdateAll(updatedListOfIssues common.GeneralUpdatedList, v
 
 	data, success, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
 	if err != nil {
-		panic(fmt.Sprintf("Updated All failed: %s", err))
+		common.HandleError(errors.Errorf("Updated All failed: %s", err), "nopanic")
 	}
 
 	if verbose {
@@ -231,8 +232,8 @@ func (c *RPConnector) BuildIssues(ids []string, concurrent bool, add_attributes 
 	}
 
 	for _, id := range ids {
-		issues = append(issues, c.BuildIssueItemHelper(id, add_attributes, re))
 		log.Printf("Getting prediction of test item(id): %s\n", id)
+		issues = append(issues, c.BuildIssueItemHelper(id, add_attributes, re))
 	}
 
 	return issues
@@ -281,15 +282,16 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 	var tfa_input common.TFAInput = c.BuildTFAInput(id, testlog)
 	prediction_json := c.GetPrediction(id, tfa_input)
 	prediction := gjson.Get(prediction_json, "result.prediction").String()
-	// Added a default defect type
-	if common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction] == nil {
-		prediction = "Automation Bug"
-	}
-
-	prediction_code := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["locator"]
-	// fmt.Println(prediction_code)
 	var issue_info IssueInfo = c.GetIssueInfoForSingleTestID(id)
-	issue_info.IssueType = prediction_code
+	// Added a default defect type
+	if common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction] != nil {
+
+		prediction_code := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["locator"]
+		// fmt.Println(prediction_code)
+		issue_info.IssueType = prediction_code
+	} else {
+		log.Print("The predictions were not extracted correctly, so no update will be made!")
+	}
 
 	// Update the comment with re result
 	if re {
@@ -305,7 +307,7 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 		prediction_name := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["longName"]
 		accuracy_score := gjson.Get(prediction_json, "result.probability_score").String()
 		err := c.updateAttributesForPrediction(id, prediction_name, accuracy_score)
-		common.HandleError(err, "panic")
+		common.HandleError(err, "nopanic")
 	}
 
 	return issue_item
@@ -315,6 +317,7 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 type RERequestBody struct {
 	ProjectName string `json:"project_name"`
 	LogMsg      string `json:"log_message"`
+	TeamName    string `json:"TEAM"`
 }
 
 type LogMsgRequestBody struct {
@@ -323,31 +326,13 @@ type LogMsgRequestBody struct {
 }
 type REResults []REResult
 
-// getLogMsg will return the log msg about the current test_item
-// func (c *RPConnector) getLogMsg(id string) string {
-// 	url := fmt.Sprintf("%s/api/v1/%s/log/under",
-// 		c.RPURL, c.ProjectName)
-// 	method := http.MethodPost
-
-// 	id_int, _ := strconv.Atoi(id)
-// 	var logMsgRequestBody LogMsgRequestBody = LogMsgRequestBody{TestItemID: []int{id_int}, LogLevel: "trace"}
-// 	body, _ := json.Marshal(logMsgRequestBody)
-// 	fmt.Println(string(body))
-// 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, "", bytes.NewBuffer(body), c.Client)
-// 	fmt.Println(string(data))
-// 	returned_ress := gjson.Get(string(data), "result").Str
-// 	final_text := processREReturnedText(returned_ress)
-// 	common.HandleError(err, "panic")
-// 	return final_text
-// }
-
 // GetREResult can extract the returned re result.
 func (c *RPConnector) GetREResult(id string) string {
 	url := c.REURL
 	method := http.MethodPost
 	logMsg := c.GetTestLog(id)
 	logMsgCombined := strings.Join(logMsg, "\n")
-	var b RERequestBody = RERequestBody{ProjectName: c.ProjectName, LogMsg: logMsgCombined}
+	var b RERequestBody = RERequestBody{ProjectName: c.ProjectName, LogMsg: logMsgCombined, TeamName: c.TeamName}
 
 	var bb map[string]RERequestBody = map[string]RERequestBody{"data": b}
 
@@ -355,7 +340,7 @@ func (c *RPConnector) GetREResult(id string) string {
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, "", bytes.NewBuffer(body), c.Client)
 	returned_ress := gjson.Get(string(data), "result").Str
 	final_text := processREReturnedText(returned_ress)
-	common.HandleError(err, "panic")
+	common.HandleError(err, "nopanic")
 
 	return final_text
 }
@@ -390,9 +375,9 @@ func (c *RPConnector) BuildIssueItemConcurrent(issuesChan chan<- IssueItem, idsC
 			break
 		}
 
+		log.Printf("Getting prediction of test item(id): %s\n", id)
 		issuesChan <- c.BuildIssueItemHelper(id, add_attributes, re)
 
-		log.Printf("Getting prediction of test item(id): %s\n", id)
 	}
 	exitChan <- true
 }
@@ -420,13 +405,13 @@ func (c *RPConnector) GetDetailedIssueInfoForSingleTestID(id string) ([]byte, er
 // GetIssueInfoForSingleTestId method returns the issueinfo with the issue(test item) id.
 func (c *RPConnector) GetIssueInfoForSingleTestID(id string) IssueInfo {
 	data, err := c.GetDetailedIssueInfoForSingleTestID(id)
-	common.HandleError(err, "panic")
+	common.HandleError(err, "nopanic")
 
 	issue_info_str := gjson.Get(string(data), "content.0.issue").String()
 
 	var issue_info IssueInfo
 	err = json.Unmarshal([]byte(issue_info_str), &issue_info)
-	common.HandleError(err, "panic")
+	common.HandleError(err, "nopanic")
 
 	return issue_info
 }
@@ -447,7 +432,7 @@ func (c *RPConnector) GetPrediction(id string, tfa_input common.TFAInput) string
 
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
 	if err != nil {
-		panic(err)
+		common.HandleError(err, "nopanic")
 	}
 
 	return string(data)
@@ -471,7 +456,7 @@ func (c *RPConnector) GetAllTestIds() []string {
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err, "panic")
+	common.HandleError(err, "nopanic")
 
 	a := gjson.Get(string(data), "content")
 
@@ -498,7 +483,7 @@ func (c *RPConnector) GetTestLog(test_id string) []string {
 	auth_token := c.AuthToken
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err, "panic")
+	common.HandleError(err, "nopanic")
 
 	a := gjson.Get(string(data), "content")
 
@@ -522,18 +507,18 @@ func (c *RPConnector) getExistingAtrributeByID(id string) Attributes {
 
 	body := bytes.NewBuffer(nil)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
-	common.HandleError(err, "panic")
+	common.HandleError(err, "nopanic")
 
 	if err != nil {
 		err = fmt.Errorf("Get attibute failed:%w", err)
-		common.HandleError(err, "panic")
+		common.HandleError(err, "nopanic")
 	}
 
 	attrs := gjson.Get(string(data), "attributes").String()
 	attr := []attribute{}
 
 	err = json.Unmarshal([]byte(attrs), &attr)
-	common.HandleError(err, "panic")
+	common.HandleError(err, "nopanic")
 
 	return Attributes{"attributes": attr}
 }
@@ -562,7 +547,7 @@ func (c *RPConnector) updateAttributesForPrediction(id, prediction, accuracy_sco
 	method := http.MethodPut
 	auth_token := c.AuthToken
 	d, err := json.Marshal(existingAttribute)
-	common.HandleError(err, "panic")
+	common.HandleError(err, "nopanic")
 
 	body := bytes.NewBuffer(d)
 	_, _, err = common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
@@ -618,7 +603,9 @@ func (c *RPConnector) InitConnector() {
 
 			data, success, err := common.SendHTTPRequest(context.Background(), method, url, auth_token, body, c.Client)
 			if err != nil {
-				panic(fmt.Errorf("read response body failed: %w", err))
+
+				err = errors.Errorf("read response body failed: %s", err)
+				common.HandleError(err, "nopanic")
 			}
 
 			if !success {
@@ -700,7 +687,7 @@ func (c *RPConnector) GetAttributesByID(id string) Attributes {
 
 	attr := Attributes{}
 	err = json.Unmarshal([]byte(attributes), &attr)
-	common.HandleError(err, "panic")
+	common.HandleError(err, "nopanic")
 
 	return attr
 }

@@ -41,7 +41,7 @@ func PrintRed(str string) {
 func PrintHeader(version string) {
 	fmt.Println("--------------------------------------------------")
 	fmt.Printf("tfacon  %s\n", version)
-	fmt.Println("Copyright (C) 2021, Red Hat, Inc.")
+	fmt.Println("Copyright (C) 2023, Red Hat, Inc.")
 	fmt.Print("-------------------------------------------------\n\n\n")
 }
 

@@ -59,6 +59,12 @@ var cmdInfoList []map[string]string = []map[string]string{
 		"cmdDescription": "The project name of report portal",
 	},
 	{
+		"cmdName":        "team-name",
+		"valName":        "TEAM_NAME",
+		"defaultVal":     "",
+		"cmdDescription": "Your team name",
+	},
+	{
 		"cmdName":        "auth-token",
 		"valName":        "AUTH_TOKEN",
 		"defaultVal":     "",
@@ -137,7 +143,7 @@ func InitTFAConfigFile(viper *viper.Viper) {
 	common.HandleError(err, "nopanic")
 	viper.SetConfigType("ini")
 	viper.SetDefault("config.concurrency", true)
-	viper.SetDefault("config.retry_times", 1)
+	viper.SetDefault("config.retry_times", 20)
 	viper.SetDefault("config.add_attributes", false)
 	err = viper.ReadConfig(bytes.NewBuffer(file))
 	common.HandleError(err, "nopanic")

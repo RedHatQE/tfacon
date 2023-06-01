@@ -21,11 +21,15 @@ pip install tfacon
 This is where you store all parameters like this
 __You must use auth_token from a superadmin account to run tfacon, otherwise the validation will fail!__
 ```yaml
-launch_id: "<your launch_id>"
-project_name: "<your project name>"
-auth_token: "xxxxx-xxxx-xxxxx-xxxx-xxxxx" 
-platform_url: "https://reportportal-<your_domain>.com"
-tfa_url: "<your tfa classifier url>:443"
+launch_id: "your launch_id goes here"
+launch_name: "This is optional if you have launch id"
+launch_uuid: "This is optional if you have launch id"
+project_name: "your project name goes here in lower case"
+team_name: "you team name, this will only be used by tfar"
+auth_token: "xxxxx-xxxx-xxxxx-xxxx-xxxxx"
+platform_url: "https://reportportal.com"
+tfa_url: "your tfa classifier url"
+re_url: "your tfa recommendation engine url"
 connector_type: "RPCon"
 ```
 The default name is tfacon.yml, you can change this by edit this environment variable __TFACON_YAML_PATH__ 
@@ -34,8 +38,10 @@ The default name is tfacon.yml, you can change this by edit this environment var
 This is where you put all the config information for tfacon
 ```ini
 [config]
-concurrency=true
-add_attributes=true
+# This will run prediction extraction concurrently
+concurrency=True
+# tfacon will add attributes of "AI Prediction" and "Accuracy" under the item details section
+add_attributes=False
 ```
 The default name for this cfg file is tfacon.cfg, you can change this by edit this environment variable __TFACON_CONFIG_PATH__
 
@@ -52,27 +58,39 @@ Flags:
       --connector-type string   The type of connector you want to use (example: RPCon, PolarionCon, JiraCon) (default "RPCon")
   -h, --help                    help for list
       --launch-id string        The launch id of report portal
+      --launch-name string      The launch name of the launch in report portal
+      --launch-uuid string      The launch uuid of report portal
       --platform-url string     The url to the test platform (example: https://reportportal-<your_domain>.com) (default "default value for platform url")
       --project-name string     The project name of report portal
+      --re-url string           The url to the Recommendation Engine (default "default value for Recommendation Engine url")
       --tfa-url string          The url to the TFA Classifier (default "default value for tfa url")
+
+Global Flags:
+  -r, --re        You can add this tag to let tfacon add Recommendation Engine result to comment section
+  -v, --verbose   You can add this tag to print more detailed info
 ```
 
 Output Example:
 ```bash
 ❯ tfacon list
 --------------------------------------------------
-tfacon  1.0.0
-Copyright (C) 2021, Red Hat, Inc.
+tfacon  1.1.2
+Copyright (C) 2023, Red Hat, Inc.
 -------------------------------------------------
 
 
-2021/08/06 03:21:33 Printing the constructed information
+2023/08/06 03:21:33 Printing the constructed information
 LaunchID:        968
-ProjectName:     TFA_RP_TEST
+ProjectName:     tfa_rp_test
 AuthToken:       xxxx-xxxx-xxxxxxx-xxxxxx-xxxxxxxxx
 RPURL:           https://reportportal-<your_domain>.com
 Client:          &{<nil> <nil> <nil> 0s}
+TeamName:        your-team-name
 TFAURL:          https://<tfa_team_domain>.com
+LaunchID:        28
+LaunchUUID:      32348
+LaunchName:      "launch_name"
+REURL:   https://dave.corp.redhat.com:443/models/61b8d1acfa9c3f1c2fd2c914/latest/model
 ```
 #### run
 ```bash
@@ -87,6 +105,7 @@ Flags:
       --connector-type string   The type of connector you want to use(example: RPCon, PolarionCon, JiraCon) (default "RPCon")
   -h, --help                    help for run
       --launch-id string        The launch id of report portal
+      --team-name string        your team name
       --launch-name string      The launch name of the launch in report portal
       --platform-url string     The url to the test platform (example: https://reportportal-<your_domain>.com) (default "default value for platform url")
       --project-name string     The project name of report portal
