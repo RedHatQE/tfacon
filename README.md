@@ -25,6 +25,7 @@ launch_id: "your launch_id goes here"
 launch_name: "This is optional if you have launch id"
 launch_uuid: "This is optional if you have launch id"
 project_name: "your project name goes here in lower case"
+team_name: "you team name, this will only be used by tfar"
 auth_token: "xxxxx-xxxx-xxxxx-xxxx-xxxxx"
 platform_url: "https://reportportal.com"
 tfa_url: "your tfa classifier url"
@@ -73,7 +74,7 @@ Output Example:
 ```bash
 ❯ tfacon list
 --------------------------------------------------
-tfacon  1.1.1
+tfacon  1.1.2
 Copyright (C) 2023, Red Hat, Inc.
 -------------------------------------------------
 
@@ -84,6 +85,7 @@ ProjectName:     tfa_rp_test
 AuthToken:       xxxx-xxxx-xxxxxxx-xxxxxx-xxxxxxxxx
 RPURL:           https://reportportal-<your_domain>.com
 Client:          &{<nil> <nil> <nil> 0s}
+TeamName:        your-team-name
 TFAURL:          https://<tfa_team_domain>.com
 LaunchID:        28
 LaunchUUID:      32348
@@ -103,6 +105,7 @@ Flags:
       --connector-type string   The type of connector you want to use(example: RPCon, PolarionCon, JiraCon) (default "RPCon")
   -h, --help                    help for run
       --launch-id string        The launch id of report portal
+      --team-name string        your team name
       --launch-name string      The launch name of the launch in report portal
       --platform-url string     The url to the test platform (example: https://reportportal-<your_domain>.com) (default "default value for platform url")
       --project-name string     The project name of report portal
