@@ -14,7 +14,7 @@ import (
 // should inpement this interface.
 type TFACon interface {
 	GetAllTestIds() []string
-	BuildUpdatedList(ids []string, concurrent bool, add_attributes bool, re bool) common.GeneralUpdatedList
+	BuildUpdatedList(ids []string, concurrent bool, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) common.GeneralUpdatedList
 	UpdateAll(common.GeneralUpdatedList, bool)
 	String() string
 	InitConnector()
@@ -58,7 +58,7 @@ func runHelper(viperConfig *viper.Viper, ids []string, con TFACon, operation str
 	switch operation {
 	case "run":
 		updated_list_of_issues = con.BuildUpdatedList(ids, viperConfig.GetBool("config.concurrency"),
-			viperConfig.GetBool("config.add_attributes"), viperConfig.GetBool("config.re"))
+			viperConfig.GetBool("config.add_attributes"), viperConfig.GetBool("config.re"), viperConfig.GetBool("config.auto_finalize_defect_type"), float32(viperConfig.GetFloat64("config.auto_finalization_thredshold")))
 	case "revert":
 		updated_list_of_issues = con.RevertUpdatedList(viperConfig.GetBool("config.verbose"))
 	default:

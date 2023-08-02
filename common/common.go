@@ -27,8 +27,15 @@ var TFA_DEFECT_TYPE_TO_SUB_TYPE map[string]PREDICTED_SUB_TYPE = map[string]PREDI
 	"System Issue":   PREDICTED_SYSTEM_BUG,
 	"No Defect":      PREDICTED_NO_DEFECT,
 }
+var TFA_DEFECT_TYPE map[string]MAIN_DEFECT_TYPE = map[string]MAIN_DEFECT_TYPE{
+	"Automation Bug": AUTOMATION_BUG,
+	"Product Bug":    PRODUCT_BUG,
+	"System Issue":   SYSTEM_BUG,
+	"No Defect":      NO_DEFECT,
+}
 
 type PREDICTED_SUB_TYPE map[string]string
+type MAIN_DEFECT_TYPE map[string]string
 
 var PREDICTED_SUB_TYPES map[string]PREDICTED_SUB_TYPE = map[string]PREDICTED_SUB_TYPE{
 	"PREDICTED_AUTOMATION_BUG": PREDICTED_AUTOMATION_BUG,
@@ -36,7 +43,42 @@ var PREDICTED_SUB_TYPES map[string]PREDICTED_SUB_TYPE = map[string]PREDICTED_SUB
 	"PREDICTED_PRODUCT_BUG":    PREDICTED_PRODUCT_BUG,
 	"PREDICTED_NO_DEFECT":      PREDICTED_NO_DEFECT,
 }
+var MAIN_DEFECT_TYPES map[string]MAIN_DEFECT_TYPE = map[string]MAIN_DEFECT_TYPE{
+	"AUTOMATION_BUG": AUTOMATION_BUG,
+	"SYSTEM_BUG":     SYSTEM_BUG,
+	"PRODUCT_BUG":    PRODUCT_BUG,
+	"NO_DEFECT":      NO_DEFECT,
+}
 
+var NO_DEFECT MAIN_DEFECT_TYPE = MAIN_DEFECT_TYPE{
+	"locator":   "nd001",
+	"typeRef":   "NO_DEFECT",
+	"longName":  "No Defect",
+	"shortName": "ND",
+	"color":     "#777777",
+}
+var AUTOMATION_BUG MAIN_DEFECT_TYPE = MAIN_DEFECT_TYPE{
+	"locator":   "ab001",
+	"typeRef":   "AUTOMATION_BUG",
+	"longName":  "Automation Bug",
+	"shortName": "AB",
+	"color":     "#f7d63e",
+}
+var PRODUCT_BUG MAIN_DEFECT_TYPE = MAIN_DEFECT_TYPE{
+	"locator":   "pb001",
+	"typeRef":   "PRODUCT_BUG",
+	"longName":  "Product Bug",
+	"shortName": "PB",
+	"color":     "#ec3900",
+}
+
+var SYSTEM_BUG MAIN_DEFECT_TYPE = MAIN_DEFECT_TYPE{
+	"locator":   "si001",
+	"typeRef":   "SYSTEM_ISSUE",
+	"longName":  "System Issue",
+	"shortName": "SI",
+	"color":     "#0274d1",
+}
 var PREDICTED_AUTOMATION_BUG PREDICTED_SUB_TYPE = PREDICTED_SUB_TYPE{
 	"typeRef":   "TO_INVESTIGATE",
 	"longName":  "Predicted Automation Bug",
