@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/RedHatQE/tfacon/common"
@@ -273,25 +272,24 @@ func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool, r
 
 // BuildIssueItemHelper method is a helper method for building
 // the issue item struct.
-func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) IssueItem {
+func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_threshold float32) IssueItem {
 	logs := c.GetTestLog(id)
 	// Make logs to string(in []byte format)
 	log_after_marshal, _ := json.Marshal(logs)
 	// This can be the input of GetPrediction
 	testlog := string(log_after_marshal)
 
-	var tfa_input common.TFAInput = c.BuildTFAInput(id, testlog)
+	var tfa_input common.TFAInput = c.BuildTFAInput(id, testlog, auto_finalize_defect_type, auto_finalization_threshold)
 	prediction_json := c.GetPrediction(id, tfa_input)
 	prediction := gjson.Get(prediction_json, "result.prediction").String()
+	finalized_by_tfa := gjson.Get(prediction_json, "result.finalize").Bool()
 	var issue_info IssueInfo = c.GetIssueInfoForSingleTestID(id)
 	accuracy_score := gjson.Get(prediction_json, "result.probability_score").String()
-	accuracy_score_float, _ := strconv.ParseFloat(strings.TrimSuffix(strings.TrimPrefix(accuracy_score, "["), "]"), 32)
 	var issue_item IssueItem = IssueItem{Issue: issue_info, TestItemID: id}
-	if auto_finalize_defect_type && float32(accuracy_score_float) >= auto_finalization_thredshold {
+	if finalized_by_tfa {
 		if common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction] != nil {
 
 			prediction_code := common.TFA_DEFECT_TYPE[prediction]["locator"]
-			// fmt.Println(prediction_code)
 			issue_info.IssueType = prediction_code
 		} else {
 			log.Print("The predictions were not extracted correctly, so no update will be made!")
@@ -305,7 +303,7 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 			issue_info.Comment += c.GetREResult(id)
 		}
 		if add_attributes {
-			prediction_name := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["longName"]
+			prediction_name := common.TFA_DEFECT_TYPE[prediction]["longName"]
 			err := c.updateAttributesForPrediction(id, prediction_name, accuracy_score, true)
 			common.HandleError(err, "nopanic")
 		}
@@ -468,8 +466,8 @@ func (c *RPConnector) GetPrediction(id string, tfa_input common.TFAInput) string
 }
 
 // BuildTFAInput method builds the TFAInput struct with the test id and messages.
-func (c *RPConnector) BuildTFAInput(test_id, messages string) common.TFAInput {
-	return common.TFAInput{ID: test_id, Project: c.ProjectName, Messages: messages}
+func (c *RPConnector) BuildTFAInput(test_id, messages string, auto_finalize_defect_type bool, auto_finalization_threshold float32) common.TFAInput {
+	return common.TFAInput{ID: test_id, Project: c.ProjectName, Messages: messages, AutoFinalizeDefectType: auto_finalize_defect_type, FinalizationThreshold: auto_finalization_threshold}
 }
 
 // GetAllTestIds returns all test ids from inside a test launch.
