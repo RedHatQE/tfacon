@@ -42,6 +42,12 @@ This is where you put all the config information for tfacon
 concurrency=True
 # tfacon will add attributes of "AI Prediction" and "Accuracy" under the item details section
 add_attributes=False
+# you can define the retry number here
+retry_times = 20
+# you can define if you want to enable the auto_finalize_defect_type feature
+auto_finalize_defect_type = True
+# You need to specify this parameter to have TFA automatically tag the test item to the defect types without Pridicted
+auto_finalization_thredshold = 0.999
 ```
 The default name for this cfg file is tfacon.cfg, you can change this by edit this environment variable __TFACON_CONFIG_PATH__
 
@@ -74,7 +80,7 @@ Output Example:
 ```bash
 ❯ tfacon list
 --------------------------------------------------
-tfacon  1.1.2
+tfacon  1.1.3
 Copyright (C) 2023, Red Hat, Inc.
 -------------------------------------------------
 
