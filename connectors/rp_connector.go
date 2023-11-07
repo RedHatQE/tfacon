@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/RedHatQE/tfacon/common"
@@ -219,28 +220,28 @@ func (c *RPConnector) UpdateAll(updatedListOfIssues common.GeneralUpdatedList, v
 // BuildUpdatedList method is a interface method for tfacon interface
 // it builds a list of issues, it returns GeneralUpdatedList.
 func (c *RPConnector) BuildUpdatedList(ids []string,
-	concurrent bool, add_attributes bool, re bool) common.GeneralUpdatedList {
-	return UpdatedList{IssuesList: c.BuildIssues(ids, concurrent, add_attributes, re)}
+	concurrent bool, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) common.GeneralUpdatedList {
+	return UpdatedList{IssuesList: c.BuildIssues(ids, concurrent, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold)}
 }
 
 // BuildIssues method build the issue struct.
-func (c *RPConnector) BuildIssues(ids []string, concurrent bool, add_attributes bool, re bool) Issues {
+func (c *RPConnector) BuildIssues(ids []string, concurrent bool, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) Issues {
 	issues := Issues{}
 
 	if concurrent {
-		return c.BuildIssuesConcurrent(ids, add_attributes, re)
+		return c.BuildIssuesConcurrent(ids, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold)
 	}
 
 	for _, id := range ids {
 		log.Printf("Getting prediction of test item(id): %s\n", id)
-		issues = append(issues, c.BuildIssueItemHelper(id, add_attributes, re))
+		issues = append(issues, c.BuildIssueItemHelper(id, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold))
 	}
 
 	return issues
 }
 
 // BuildIssuesConcurrent methods builds the issues struct concurrently.
-func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool, re bool) Issues {
+func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) Issues {
 	issues := Issues{}
 	issuesChan := make(chan IssueItem, len(ids))
 	idsChan := make(chan string, len(ids))
@@ -255,7 +256,7 @@ func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool, r
 	}()
 
 	for i := 0; i < len(ids); i++ {
-		go c.BuildIssueItemConcurrent(issuesChan, idsChan, exitChan, add_attributes, re)
+		go c.BuildIssueItemConcurrent(issuesChan, idsChan, exitChan, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold)
 	}
 
 	for i := 0; i < len(ids); i++ {
@@ -272,7 +273,7 @@ func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool, r
 
 // BuildIssueItemHelper method is a helper method for building
 // the issue item struct.
-func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bool) IssueItem {
+func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) IssueItem {
 	logs := c.GetTestLog(id)
 	// Make logs to string(in []byte format)
 	log_after_marshal, _ := json.Marshal(logs)
@@ -283,33 +284,61 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 	prediction_json := c.GetPrediction(id, tfa_input)
 	prediction := gjson.Get(prediction_json, "result.prediction").String()
 	var issue_info IssueInfo = c.GetIssueInfoForSingleTestID(id)
-	// Added a default defect type
-	if common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction] != nil {
-
-		prediction_code := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["locator"]
-		// fmt.Println(prediction_code)
-		issue_info.IssueType = prediction_code
-	} else {
-		log.Print("The predictions were not extracted correctly, so no update will be made!")
-	}
-
-	// Update the comment with re result
-	if re {
-		// test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
-		// test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
-		// result, _ := json.Marshal(c.GGetDetailedIssueInfoForSingleTestIDetREResult(test_item_name))
-		issue_info.Comment += c.GetREResult(id)
-	}
-
+	accuracy_score := gjson.Get(prediction_json, "result.probability_score").String()
+	accuracy_score_float, _ := strconv.ParseFloat(strings.TrimSuffix(strings.TrimPrefix(accuracy_score, "["), "]"), 32)
 	var issue_item IssueItem = IssueItem{Issue: issue_info, TestItemID: id}
+	if auto_finalize_defect_type && float32(accuracy_score_float) >= auto_finalization_thredshold {
+		if common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction] != nil {
 
-	if add_attributes {
-		prediction_name := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["longName"]
-		accuracy_score := gjson.Get(prediction_json, "result.probability_score").String()
-		err := c.updateAttributesForPrediction(id, prediction_name, accuracy_score)
-		common.HandleError(err, "nopanic")
+			prediction_code := common.TFA_DEFECT_TYPE[prediction]["locator"]
+			// fmt.Println(prediction_code)
+			issue_info.IssueType = prediction_code
+		} else {
+			log.Print("The predictions were not extracted correctly, so no update will be made!")
+		}
+
+		// Update the comment with re result
+		if re {
+			// test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
+			// test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
+			// result, _ := json.Marshal(c.GGetDetailedIssueInfoForSingleTestIDetREResult(test_item_name))
+			issue_info.Comment += c.GetREResult(id)
+		}
+		if add_attributes {
+			prediction_name := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["longName"]
+			err := c.updateAttributesForPrediction(id, prediction_name, accuracy_score, true)
+			common.HandleError(err, "nopanic")
+		}
+
+		issue_item = IssueItem{Issue: issue_info, TestItemID: id}
+
+	} else {
+		// Added a default defect type
+		if common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction] != nil {
+
+			prediction_code := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["locator"]
+			// fmt.Println(prediction_code)
+			issue_info.IssueType = prediction_code
+		} else {
+			log.Print("The predictions were not extracted correctly, so no update will be made!")
+		}
+
+		// Update the comment with re result
+		if re {
+			// test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
+			// test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
+			// result, _ := json.Marshal(c.GGetDetailedIssueInfoForSingleTestIDetREResult(test_item_name))
+			issue_info.Comment += c.GetREResult(id)
+		}
+
+		issue_item = IssueItem{Issue: issue_info, TestItemID: id}
+
+		if add_attributes {
+			prediction_name := common.TFA_DEFECT_TYPE_TO_SUB_TYPE[prediction]["longName"]
+			err := c.updateAttributesForPrediction(id, prediction_name, accuracy_score, false)
+			common.HandleError(err, "nopanic")
+		}
 	}
-
 	return issue_item
 }
 
@@ -368,7 +397,7 @@ func processREReturnedText(re_result string) string {
 
 // BuildIssueItemConcurrent method builds Issue Item Concurrently.
 func (c *RPConnector) BuildIssueItemConcurrent(issuesChan chan<- IssueItem, idsChan <-chan string, exitChan chan<- bool,
-	add_attributes bool, re bool) {
+	add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) {
 	for {
 		id, ok := <-idsChan
 		if !ok {
@@ -376,7 +405,7 @@ func (c *RPConnector) BuildIssueItemConcurrent(issuesChan chan<- IssueItem, idsC
 		}
 
 		log.Printf("Getting prediction of test item(id): %s\n", id)
-		issuesChan <- c.BuildIssueItemHelper(id, add_attributes, re)
+		issuesChan <- c.BuildIssueItemHelper(id, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold)
 
 	}
 	exitChan <- true
@@ -523,12 +552,20 @@ func (c *RPConnector) getExistingAtrributeByID(id string) Attributes {
 	return Attributes{"attributes": attr}
 }
 
-func (c *RPConnector) updateAttributesForPrediction(id, prediction, accuracy_score string) error {
+func (c *RPConnector) updateAttributesForPrediction(id, prediction, accuracy_score string, finalized_by_tfa bool) error {
 	existingAttribute := c.getExistingAtrributeByID(id)
 	tfa_prediction_attr := attribute{
 
 		"key":   "AI Prediction",
 		"value": prediction,
+	}
+	finalized_by_tfa_attr := attribute{
+
+		"key":   "Finalized_By",
+		"value": "TFA",
+	}
+	if finalized_by_tfa {
+		existingAttribute["attributes"] = append(existingAttribute["attibutes"], finalized_by_tfa_attr)
 	}
 	var tfa_accuracy_score attribute
 	if accuracy_score != "" {

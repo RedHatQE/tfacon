@@ -143,6 +143,8 @@ func InitTFAConfigFile(viper *viper.Viper) {
 	common.HandleError(err, "nopanic")
 	viper.SetConfigType("ini")
 	viper.SetDefault("config.concurrency", true)
+	viper.SetDefault("config.auto_finalize_defect_type", false)
+	viper.SetDefault("config.auto_finalization_thredshold", 0.5)
 	viper.SetDefault("config.retry_times", 20)
 	viper.SetDefault("config.add_attributes", false)
 	err = viper.ReadConfig(bytes.NewBuffer(file))
