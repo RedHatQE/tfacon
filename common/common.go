@@ -15,9 +15,11 @@ type (
 	// TFAInput is the data structure for describing
 	// the three input params for TFA Classifier.
 	TFAInput struct {
-		ID       string `json:"id"`
-		Project  string `json:"project"`
-		Messages string `json:"messages"`
+		ID                     string  `json:"id"`
+		Project                string  `json:"project"`
+		Messages               string  `json:"messages"`
+		AutoFinalizeDefectType bool    `json:"finalization_flag"`
+		FinalizationThreshold  float32 `json:"finalization_threshold"`
 	}
 )
 
