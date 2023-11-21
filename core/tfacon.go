@@ -13,6 +13,7 @@ import (
 // connectors, any connector to any test management platform
 // should inpement this interface.
 type TFACon interface {
+	GetAllTestInfos() map[string]string
 	GetAllTestIds() []string
 	BuildUpdatedList(ids []string, concurrent bool, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) common.GeneralUpdatedList
 	UpdateAll(common.GeneralUpdatedList, bool)
