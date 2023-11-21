@@ -487,7 +487,7 @@ func (c *RPConnector) GetAllTestInfos() map[string]string {
 
 	a := gjson.Get(string(data), "content")
 
-	var ret map[string]string
+	var ret map[string]string = make(map[string]string)
 	a.ForEach(func(_, m gjson.Result) bool {
 		ret_id := m.Get("id").String()
 		ret_name := m.Get("name").String()
