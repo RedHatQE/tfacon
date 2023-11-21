@@ -734,8 +734,10 @@ func TestRPConnector_BuildTFAInput(t *testing.T) {
 		TFAURL      string
 	}
 	type args struct {
-		test_id  string
-		messages string
+		test_id                     string
+		messages                    string
+		auto_finalize_defect_type   bool
+		auto_finalization_threshold float32
 	}
 	tests := []struct {
 		name   string
@@ -756,7 +758,7 @@ func TestRPConnector_BuildTFAInput(t *testing.T) {
 				Client:      tt.fields.Client,
 				TFAURL:      tt.fields.TFAURL,
 			}
-			if got := c.BuildTFAInput(tt.args.test_id, tt.args.messages); !reflect.DeepEqual(got, tt.want) {
+			if got := c.BuildTFAInput(tt.args.test_id, tt.args.messages, tt.args.auto_finalize_defect_type, tt.args.auto_finalization_threshold); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("RPConnector.BuildTFAInput() = %v, want %v", got, tt.want)
 			}
 		})

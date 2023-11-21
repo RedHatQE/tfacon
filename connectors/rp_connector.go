@@ -254,6 +254,7 @@ func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool, r
 		close(idsChan)
 	}()
 
+	// here we should open cpu number of goroutines, but we know, the number of ids will not exceed 10000, so we are good
 	for i := 0; i < len(ids); i++ {
 		go c.BuildIssueItemConcurrent(issuesChan, idsChan, exitChan, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold)
 	}
@@ -470,8 +471,7 @@ func (c *RPConnector) BuildTFAInput(test_id, messages string, auto_finalize_defe
 	return common.TFAInput{ID: test_id, Project: c.ProjectName, Messages: messages, AutoFinalizeDefectType: auto_finalize_defect_type, FinalizationThreshold: auto_finalization_threshold}
 }
 
-// GetAllTestIds returns all test ids from inside a test launch.
-func (c *RPConnector) GetAllTestIds() []string {
+func (c *RPConnector) GetAllTestInfos() map[string]string {
 	if c.LaunchID == "" {
 		c.LaunchID = c.GetLaunchID()
 	}
@@ -487,15 +487,26 @@ func (c *RPConnector) GetAllTestIds() []string {
 
 	a := gjson.Get(string(data), "content")
 
-	var ret []string
-
+	var ret map[string]string
 	a.ForEach(func(_, m gjson.Result) bool {
-		ret = append(ret, m.Get("id").String())
-
+		ret_id := m.Get("id").String()
+		ret_name := m.Get("name").String()
+		ret[ret_id] = ret_name
 		return true
 	})
 
 	return ret
+}
+
+// GetAllTestIds returns all test ids from inside a test launch.
+func (c *RPConnector) GetAllTestIds() []string {
+
+	var ids []string
+	for id, _ := range c.GetAllTestInfos() {
+		ids = append(ids, id)
+	}
+
+	return ids
 }
 
 // GetTestLog returns the test log(test msg) for a test item.
