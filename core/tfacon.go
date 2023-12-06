@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/RedHatQE/tfacon/common"
 	"github.com/RedHatQE/tfacon/connectors"
@@ -96,7 +97,11 @@ func GetCon(viper *viper.Viper) TFACon {
 	switch viper.Get("CONNECTOR_TYPE") {
 	case "RPCon":
 		con = &connectors.RPConnector{Client: &http.Client{}}
-		err := viper.Unmarshal(con)
+
+		parsedURL, err := url.Parse(viper.GetString("PLATFORM_URL"))
+		common.HandleError(err, "nopanic")
+		viper.Set("PLATFORM_URL", fmt.Sprintf("https://%s", parsedURL.Hostname()))
+		err = viper.Unmarshal(con)
 
 		common.HandleError(err, "panic")
 	// case "POLCon":
@@ -105,8 +110,11 @@ func GetCon(viper *viper.Viper) TFACon {
 	// 	con = RPConnector{}
 	default:
 		con = &connectors.RPConnector{Client: &http.Client{}}
+		parsedURL, err := url.Parse(viper.GetString("PLATFORM_URL"))
+		common.HandleError(err, "nopanic")
+		viper.Set("PLATFORM_URL", fmt.Sprintf("https://%s", parsedURL.Hostname()))
 
-		err := viper.Unmarshal(con)
+		err = viper.Unmarshal(con)
 
 		common.HandleError(err, "panic")
 	}
