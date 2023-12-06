@@ -500,7 +500,6 @@ func (c *RPConnector) GetAllTestInfos() map[string]string {
 
 // GetAllTestIds returns all test ids from inside a test launch.
 func (c *RPConnector) GetAllTestIds() []string {
-
 	var ids []string
 	for id, _ := range c.GetAllTestInfos() {
 		ids = append(ids, id)
@@ -621,7 +620,6 @@ func getExistingDefectTypeLocatorID(gjson_obj []gjson.Result, defect_type string
 // InitConnector create defect types before doing all sync/update job
 // this method will run before everything.
 func (c *RPConnector) InitConnector() {
-	c.RPURL = strings.TrimSuffix(c.RPURL, "/")
 	fmt.Println("Initializing Defect Types...")
 	url := fmt.Sprintf("%s/api/v1/%s/settings", c.RPURL, c.ProjectName)
 	method := http.MethodGet
