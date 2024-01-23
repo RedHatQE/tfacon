@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/RedHatQE/tfacon/common"
@@ -298,10 +299,12 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 
 		// Update the comment with re result
 		if re {
-			// test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
-			// test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
-			// result, _ := json.Marshal(c.GGetDetailedIssueInfoForSingleTestIDetREResult(test_item_name))
-			issue_info.Comment += c.GetREResult(id)
+			if issue_info.Comment != "" {
+				issue_info.Comment += "\n"
+				issue_info.Comment += c.GetREResult(id)
+			} else {
+				issue_info.Comment += c.GetREResult(id)
+			}
 		}
 		if add_attributes {
 			prediction_name := common.TFA_DEFECT_TYPE[prediction]["longName"]
@@ -324,10 +327,12 @@ func (c *RPConnector) BuildIssueItemHelper(id string, add_attributes bool, re bo
 
 		// Update the comment with re result
 		if re {
-			// test_item_detailed_info, _ := c.GetDetailedIssueInfoForSingleTestID(id)
-			// test_item_name := gjson.Get(string(test_item_detailed_info), "content.0.name").String()
-			// result, _ := json.Marshal(c.GGetDetailedIssueInfoForSingleTestIDetREResult(test_item_name))
-			issue_info.Comment += c.GetREResult(id)
+			if issue_info.Comment != "" {
+				issue_info.Comment += "\n"
+				issue_info.Comment += c.GetREResult(id)
+			} else {
+				issue_info.Comment += c.GetREResult(id)
+			}
 		}
 
 		issue_item = IssueItem{Issue: issue_info, TestItemID: id}
@@ -376,20 +381,38 @@ func (c *RPConnector) GetREResult(id string) string {
 // processREReturnedText is a helper function which
 // process the RE returned Information.
 func processREReturnedText(re_result string) string {
-	// re_result_links := strings.Split(re_result, " ")[2:13]
-	// var link_map map[string]string = make(map[string]string)
-	// for i, val := range re_result_links {
-	// 	if i%4 == 0 {
-	// 		link_map[val] = re_result_links[i+2]
-	// 	}
-	// }
-	// final_text := "LINK, SCORE\n"
-	// index := 1
-	// for key, val := range link_map {
-	// 	// [link1](http://foo.bar), O.5
-	// 	final_text += fmt.Sprintf("[link%d](%s): %s\n", index, key, val)
-	// 	index += 1
-	// }
+	if re_result != "No Similar Test Case Found" {
+		// if re_result is No Similar Test Case Found, we don't need to do preprocessing
+		var allStringsFromREResult []string = strings.Split(re_result, ",")
+		// finalStrings stores all valid non-empty strings from the re_result one by one in array
+		finalStrings := make([]string, 0)
+		for _, str := range allStringsFromREResult {
+			current_split_res := strings.Split(str, " ")
+			for _, str := range current_split_res {
+				if str != "" {
+					finalStrings = append(finalStrings, str)
+				}
+			}
+		}
+		finalStrings = finalStrings[1:]
+		var final_info map[string][]string = make(map[string][]string)
+		result_number := 1
+		for i := 0; i < len(finalStrings); i += 2 {
+			key_name := "Recommendation Engine Recommended Result " + strconv.Itoa(result_number)
+			final_info[key_name] = []string{finalStrings[i], finalStrings[i+1]}
+			result_number += 1
+
+		}
+		final_text := "TFA-R[Similar_Results]\n"
+		for key, val := range final_info {
+			// [link1](http://foo.bar), O.5
+			final_text += fmt.Sprintf("[%s](%s) Similarity score: %s\n", key, val[0], val[1])
+		}
+
+		seperator_line := strings.Repeat("=", 70) + "\n"
+
+		re_result = seperator_line + final_text + seperator_line
+	}
 
 	return re_result
 }
