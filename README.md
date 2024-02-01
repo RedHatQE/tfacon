@@ -47,7 +47,7 @@ retry_times = 20
 # you can define if you want to enable the auto_finalize_defect_type feature
 auto_finalize_defect_type = True
 # You need to specify this parameter to have TFA automatically tag the test item to the defect types without Pridicted
-auto_finalization_thredshold = 0.999
+auto_finalization_threshold = 0.999
 ```
 The default name for this cfg file is tfacon.cfg, you can change this by edit this environment variable __TFACON_CONFIG_PATH__
 
