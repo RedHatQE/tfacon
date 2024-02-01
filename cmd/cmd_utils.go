@@ -2,10 +2,8 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -120,39 +118,6 @@ func initViperVal(cmd *cobra.Command, viper *viper.Viper, cmdName, valName, defa
 
 	cmd.PersistentFlags().StringP(cmdName, "", viper.GetString(valName), cmdDescription)
 	err := viper.BindPFlag(valName, cmd.PersistentFlags().Lookup(cmdName))
-	common.HandleError(err, "nopanic")
-}
-
-func InitTFAConfigFile(viper *viper.Viper) {
-	var file []byte
-
-	var err error
-	exist := common.FileExist("./tfacon.cfg")
-	if os.Getenv("TFACON_CONFIG_PATH") != "" {
-		file, err = ioutil.ReadFile(os.Getenv("TFACON_CONFIG_PATH"))
-	} else if exist {
-		file, err = ioutil.ReadFile("./tfacon.cfg")
-	} else {
-		_, err = os.Create("tfacon.cfg")
-		common.HandleError(err, "nopanic")
-		file, err = ioutil.ReadFile("./tfacon.cfg")
-		common.HandleError(err, "nopanic")
-	}
-	common.HandleError(err, "nopanic")
-	viper.SetConfigType("ini")
-	viper.SetDefault("config.concurrency", true)
-	viper.SetDefault("config.auto_finalize_defect_type", false)
-	viper.SetDefault("config.auto_finalization_threshold", 0.5)
-	viper.SetDefault("config.retry_times", 20)
-	viper.SetDefault("config.add_attributes", false)
-	err = viper.ReadConfig(bytes.NewBuffer(file))
-	common.HandleError(err, "nopanic")
-	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "You can add this tag to print more detailed info")
-	err = viper.BindPFlag("config.verbose", rootCmd.PersistentFlags().Lookup("verbose"))
-
-	rootCmd.PersistentFlags().BoolP("re", "r", false,
-		"You can add this tag to let tfacon add Recommendation Engine result to comment section")
-	err = viper.BindPFlag("config.re", rootCmd.PersistentFlags().Lookup("re"))
 	common.HandleError(err, "nopanic")
 }
 
