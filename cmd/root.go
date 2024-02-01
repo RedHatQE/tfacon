@@ -58,7 +58,14 @@ var (
 
 func init() {
 	viperConfig = viper.New()
-	InitTFAConfigFile(viperConfig)
-	err := viperConfig.Unmarshal(&cfg)
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "You can add this tag to print more detailed info")
+	err := viper.BindPFlag("config.verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+
+	rootCmd.PersistentFlags().BoolP("re", "r", false,
+		"You can add this tag to let tfacon add Recommendation Engine result to comment section")
+	err = viper.BindPFlag("config.re", rootCmd.PersistentFlags().Lookup("re"))
+	common.HandleError(err, "nopanic")
+	common.InitTFAConfigFile(viperConfig)
+	err = viperConfig.Unmarshal(&cfg)
 	common.HandleError(err, "nopanic")
 }
