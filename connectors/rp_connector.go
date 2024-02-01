@@ -220,28 +220,28 @@ func (c *RPConnector) UpdateAll(updatedListOfIssues common.GeneralUpdatedList, v
 // BuildUpdatedList method is a interface method for tfacon interface
 // it builds a list of issues, it returns GeneralUpdatedList.
 func (c *RPConnector) BuildUpdatedList(ids []string,
-	concurrent bool, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) common.GeneralUpdatedList {
-	return UpdatedList{IssuesList: c.BuildIssues(ids, concurrent, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold)}
+	concurrent bool, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_threshold float32) common.GeneralUpdatedList {
+	return UpdatedList{IssuesList: c.BuildIssues(ids, concurrent, add_attributes, re, auto_finalize_defect_type, auto_finalization_threshold)}
 }
 
 // BuildIssues method build the issue struct.
-func (c *RPConnector) BuildIssues(ids []string, concurrent bool, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) Issues {
+func (c *RPConnector) BuildIssues(ids []string, concurrent bool, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_threshold float32) Issues {
 	issues := Issues{}
 
 	if concurrent {
-		return c.BuildIssuesConcurrent(ids, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold)
+		return c.BuildIssuesConcurrent(ids, add_attributes, re, auto_finalize_defect_type, auto_finalization_threshold)
 	}
 
 	for _, id := range ids {
 		log.Printf("Getting prediction of test item(id): %s\n", id)
-		issues = append(issues, c.BuildIssueItemHelper(id, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold))
+		issues = append(issues, c.BuildIssueItemHelper(id, add_attributes, re, auto_finalize_defect_type, auto_finalization_threshold))
 	}
 
 	return issues
 }
 
 // BuildIssuesConcurrent methods builds the issues struct concurrently.
-func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) Issues {
+func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_threshold float32) Issues {
 	issues := Issues{}
 	issuesChan := make(chan IssueItem, len(ids))
 	idsChan := make(chan string, len(ids))
@@ -257,7 +257,7 @@ func (c *RPConnector) BuildIssuesConcurrent(ids []string, add_attributes bool, r
 
 	// here we should open cpu number of goroutines, but we know, the number of ids will not exceed 10000, so we are good
 	for i := 0; i < len(ids); i++ {
-		go c.BuildIssueItemConcurrent(issuesChan, idsChan, exitChan, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold)
+		go c.BuildIssueItemConcurrent(issuesChan, idsChan, exitChan, add_attributes, re, auto_finalize_defect_type, auto_finalization_threshold)
 	}
 
 	for i := 0; i < len(ids); i++ {
@@ -419,7 +419,7 @@ func processREReturnedText(re_result string) string {
 
 // BuildIssueItemConcurrent method builds Issue Item Concurrently.
 func (c *RPConnector) BuildIssueItemConcurrent(issuesChan chan<- IssueItem, idsChan <-chan string, exitChan chan<- bool,
-	add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_thredshold float32) {
+	add_attributes bool, re bool, auto_finalize_defect_type bool, auto_finalization_threshold float32) {
 	for {
 		id, ok := <-idsChan
 		if !ok {
@@ -427,7 +427,7 @@ func (c *RPConnector) BuildIssueItemConcurrent(issuesChan chan<- IssueItem, idsC
 		}
 
 		log.Printf("Getting prediction of test item(id): %s\n", id)
-		issuesChan <- c.BuildIssueItemHelper(id, add_attributes, re, auto_finalize_defect_type, auto_finalization_thredshold)
+		issuesChan <- c.BuildIssueItemHelper(id, add_attributes, re, auto_finalize_defect_type, auto_finalization_threshold)
 
 	}
 	exitChan <- true

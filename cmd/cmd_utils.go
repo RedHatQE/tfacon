@@ -127,24 +127,22 @@ func InitTFAConfigFile(viper *viper.Viper) {
 	var file []byte
 
 	var err error
-
+	exist := common.FileExist("./tfacon.cfg")
 	if os.Getenv("TFACON_CONFIG_PATH") != "" {
 		file, err = ioutil.ReadFile(os.Getenv("TFACON_CONFIG_PATH"))
-	} else if common.FileExist("./tfacon.cfg") {
+	} else if exist {
 		file, err = ioutil.ReadFile("./tfacon.cfg")
+	} else {
+		_, err = os.Create("tfacon.cfg")
+		common.HandleError(err, "nopanic")
+		file, err = ioutil.ReadFile("./tfacon.cfg")
+		common.HandleError(err, "nopanic")
 	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			_, err = os.Create("tfacon.cfg")
-			common.HandleError(err, "nopanic")
-		}
-	}()
 	common.HandleError(err, "nopanic")
 	viper.SetConfigType("ini")
 	viper.SetDefault("config.concurrency", true)
 	viper.SetDefault("config.auto_finalize_defect_type", false)
-	viper.SetDefault("config.auto_finalization_thredshold", 0.5)
+	viper.SetDefault("config.auto_finalization_threshold", 0.5)
 	viper.SetDefault("config.retry_times", 20)
 	viper.SetDefault("config.add_attributes", false)
 	err = viper.ReadConfig(bytes.NewBuffer(file))
