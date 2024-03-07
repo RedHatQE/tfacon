@@ -372,7 +372,8 @@ func (c *RPConnector) GetREResult(id string) string {
 	body, _ := json.Marshal(bb)
 	data, _, err := common.SendHTTPRequest(context.Background(), method, url, "", bytes.NewBuffer(body), c.Client)
 	returned_ress := gjson.Get(string(data), "result").Str
-	final_text := processREReturnedText(returned_ress)
+	common.HandleError(err, "nopanic")
+	err, final_text := processREReturnedText(returned_ress)
 	common.HandleError(err, "nopanic")
 
 	return final_text
@@ -380,7 +381,15 @@ func (c *RPConnector) GetREResult(id string) string {
 
 // processREReturnedText is a helper function which
 // process the RE returned Information.
-func processREReturnedText(re_result string) string {
+func processREReturnedText(re_result string) (error, string) {
+	var errRet error
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("re_result hasn't been retrieved correctly")
+			errRet = errors.Errorf("re_result hasn't been retrieved correctly: %s", r)
+			return
+		}
+	}()
 	if re_result != "No Similar Test Case Found" {
 		// if re_result is No Similar Test Case Found, we don't need to do preprocessing
 		var allStringsFromREResult []string = strings.Split(re_result, ",")
@@ -414,7 +423,7 @@ func processREReturnedText(re_result string) string {
 		re_result = seperator_line + final_text + seperator_line
 	}
 
-	return re_result
+	return errRet, re_result
 }
 
 // BuildIssueItemConcurrent method builds Issue Item Concurrently.
