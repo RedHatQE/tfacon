@@ -175,3 +175,17 @@ func InitTFAConfigFile(viper *viper.Viper) {
 	err = viper.ReadConfig(bytes.NewBuffer(file))
 	HandleError(err, "nopanic")
 }
+
+// UpdateTFAConfig update the TFA config and return new TFAConfig
+func UpdateTFAConfig(concurrent bool, addAttributes bool, enableRE bool, autoFinalizeDefectType bool, autoFinalizationThreshold float32, retryTimes int, verbose bool) *TFAConfig {
+	tfaConfig := &TFAConfig{
+		Concurrent:                concurrent,
+		AddAttributes:             addAttributes,
+		Re:                        enableRE,
+		AutoFinalizeDefectType:    autoFinalizeDefectType,
+		AutoFinalizationThreshold: autoFinalizationThreshold,
+		RetryTimes:                retryTimes,
+		Verbose:                   verbose,
+	}
+	return tfaConfig
+}
