@@ -286,6 +286,7 @@ func (c *RPConnector) BuildIssueItemHelper(id string, tfaConfig common.TFAConfig
 			predictionCode := common.TFADefectType[prediction]["locator"]
 			issueInfo.IssueType = predictionCode
 			log.Printf("Finalizer prediction code is: %s\n", predictionCode)
+			issueInfo.Comment = "### TFA-C Auto Finalized\n" + issueInfo.Comment
 		} else {
 			log.Println("The predictions were not extracted correctly, so no finalizer update will be made!")
 		}
