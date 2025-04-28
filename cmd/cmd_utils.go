@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cmdInfoList []map[string]string = []map[string]string{
+var cmdInfoList = []map[string]string{
 	{
 		"cmdName":        "tfa-url",
 		"valName":        "TFA_URL",
